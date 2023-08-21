@@ -7,6 +7,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(GLEW REQUIRED)
+message("GLEW location: " ${GLEW_INCLUDE_DIRS})
+
 set(PROJECT_SOURCES
         src/main.cpp
                                 include/draw.h
@@ -26,8 +29,8 @@ set(PROJECT_SOURCES
             ${PROJECT_SOURCES}
         )
 
-target_link_libraries(${PROJECT_NAME} opengl32 glu32 argus glew32.lib)
-include_directories(${CMAKE_SOURCE_DIR}/include include ../capturer/include ../lib/include ../cots/include)
+target_link_libraries(${PROJECT_NAME} opengl32 glu32 argus GLEW::GLEW)
+include_directories(${CMAKE_SOURCE_DIR}/include include ../capturer/include ../lib/include ${GLEW_INCLUDE_DIRS})
 
 install(TARGETS ${PROJECT_NAME}
     BUNDLE DESTINATION .

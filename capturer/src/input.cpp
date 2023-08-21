@@ -19,7 +19,7 @@
 #include <windows.h>
 
 #include <d3d11.h>
-#include <d3d11sdklayers.h> // Si vous avez besoin du debug layer
+#include <d3d11sdklayers.h>
 #include <dxgi.h>
 #include <d3dcommon.h>
 #include <D3Dcompiler.h>
@@ -37,7 +37,6 @@ std::vector<std::string> removeDuplicates(const std::vector<std::string>& inputV
     std::vector<std::string> resultVector;
 
     for (const std::string& str : inputVector) {
-        // Vérifie si l'élément existe déjà dans le vecteur résultat
         if (std::find(resultVector.begin(), resultVector.end(), str) == resultVector.end()) {
             resultVector.push_back(str);
         }
@@ -82,7 +81,6 @@ LRESULT WINAPI input::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 bool input::initDirectX(HWND hWndToCapture)
 {
-    // Étape 1 : Initialisation de DirectX/Direct3D
     pD3D = Direct3DCreate9(D3D_SDK_VERSION);
 
     d3dpp = {};
@@ -90,45 +88,16 @@ bool input::initDirectX(HWND hWndToCapture)
     d3dpp.SwapEffect = D3DSWAPEFFECT_COPY;
     d3dpp.BackBufferWidth = width;
     d3dpp.BackBufferHeight = height;
-    //HDC hDC = GetDC(hWndToCapture);
-    //PIXELFORMATDESCRIPTOR pfd = {};
-    //int pixelFormat = GetPixelFormat(hDC);
-    //d3dpp.BackBufferFormat = (D3DFORMAT)pixelFormat;
 
     if (FAILED(pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWndToCapture, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &pDevice))) {
         std::cerr << "CreateDevice Failed" << std::endl;
         return false;
     }
-
-//    // Étape 2 : Rendu de la fenêtre cible sur le back buffer
-//    if (FAILED(pDevice->CreateOffscreenPlainSurface(width, height, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &pSurface, nullptr))) {
-//        std::cerr << "CreateOffscreenPlainSurface Failed" << std::endl;
-//        return false;
-//    }
-
     return true;
 }
 
 bool input::captureDirectX(char * buffer)
 {
-//    pDevice->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &pSurface);
-//    D3DXSaveSurfaceToFileInMemory(pBuffer, D3DFMT_A8R8G8B8, pSurface, )
-//    if (FAILED(pDevice->GetFrontBufferData(0, pSurface))) {
-//        //std::cerr << "GetFrontBufferData Failed " << GetLastError() << std::endl;
-//        return false;
-//    }
-
-//    // Étape 3 : Capturer la surf4ace back buffer
-//    if (FAILED(pSurface->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY))) {
-//        std::cerr << "LockRect Failed" << std::endl;
-//        return false;
-//    }
-
-//    // Utilisez lockedRect.pBits pour accéder aux données de la surface capturée
-//    memcpy(buffer, lockedRect.pBits, header->size);
-
-//    pSurface->UnlockRect();
-
     pDevice->CreateOffscreenPlainSurface(width, height, D3DFMT_A8R8G8B8, D3DPOOL_SCRATCH, &pSurface, NULL);
     pDevice->GetFrontBufferData(0, pSurface);
     pSurface->LockRect(&lockedRect, NULL, D3DLOCK_NO_DIRTY_UPDATE|D3DLOCK_NOSYSLOCK|D3DLOCK_READONLY);
@@ -143,7 +112,6 @@ bool input::captureDirectX(char * buffer)
 
 void input::cleanupDirectX()
 {
-    // Libération des ressources
     if (pSurface) {
         pSurface->Release();
         pSurface = nullptr;
@@ -161,7 +129,6 @@ void input::cleanupDirectX()
 void input::configureWindow()
 {
     hWnd = FindWindowA(nullptr, (LPCSTR)title.c_str());
-    //hWnd = GetForegroundWindow();
     if (hWnd == nullptr) {
         std::map<std::string, HWND> list;
         GetOpenWindows(list);
@@ -215,24 +182,6 @@ bool input::initGDI(HWND hWndToCapture)
 
 bool input::captureGDI(char * buffer)
 {
-//    // Copier le contenu de la fenêtre dans le contexte de mémoire compatible
-//    if (!PrintWindow(hWnd, hdcMem, 0)) {
-//        DeleteDC(hdcMem);
-//        ReleaseDC(hWnd, hdcWindow);
-//        ReleaseDC(nullptr, hdcScreen);
-//        return false;
-//    }
-
-//    // Copier le contenu de l'écran dans le contexte de mémoire compatible
-//    //    if (!BitBlt(hdcMem, 0, 0, width, height, hdcWindow, 0, 0, SRCCOPY)) {
-//    //        DeleteDC(hdcMem);
-//    //        ReleaseDC(nullptr, hdcWindow);
-//    //        return false;
-//    //    }
-
-//    // Obtenez les données de l'image dans le buffer RGB32
-//    GetDIBits(hdcMem, hBitmap, 0, height, buffer, (BITMAPINFO*)&bi, DIB_RGB_COLORS);
-
     hWindow = FindWindow(NULL,(LPCSTR)title.c_str());
     hScrDC = GetDC(hWindow);
     HDC hMemDC = CreateCompatibleDC(hScrDC);
@@ -305,7 +254,7 @@ input::input(std::map<std::string, std::string> &configuration)
 
         bi.biSize = sizeof(BITMAPINFOHEADER);
         bi.biWidth = width;
-        bi.biHeight = -height; // Image est stockée à l'envers, donc la hauteur est négative
+        bi.biHeight = -height;
         bi.biPlanes = 1;
         bi.biBitCount = 32;
         bi.biCompression = BI_RGB;
@@ -358,7 +307,6 @@ void input::shoot()
 
 bool input::captureFullScreen(char * buffer, int& width, int& height)
 {
-    // Copier le contenu de l'écran dans le contexte de mémoire compatible
     if (!BitBlt(hdcMem, 0, 0, width, height, hdcScreen, 0, 0, SRCCOPY)) {
         DeleteDC(hdcMem);
         ReleaseDC(nullptr, hdcScreen);
@@ -367,13 +315,11 @@ bool input::captureFullScreen(char * buffer, int& width, int& height)
         return false;
     }
 
-    // Obtenez les données de l'image dans le buffer RGB32
     GetDIBits(hdcMem, hBitmap, 0, height, buffer, (BITMAPINFO*)&bi, DIB_RGB_COLORS);
 
     return true;
 }
 
-// Fonction pour capturer une fenêtre par son titre et stocker l'image dans un buffer RGB32
 bool input::captureSingleWindow(char * buffer, int& width, int& height) {
     if (directX) captureDirectX(buffer);
     else if(gdi) captureGDI(buffer);
