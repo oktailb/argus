@@ -71,7 +71,6 @@ Thumbs.db
 *.dll
 *.exe
 bin
-lib
 cots
 *.user
 
