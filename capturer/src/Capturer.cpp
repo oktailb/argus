@@ -1,13 +1,21 @@
+#ifdef WIN32
+    #include <windows.h>
+    #include "desktop.h"
+#elif __linux__
+    #include <sys/types.h>
+    #include <sys/wait.h>
+    #include <unistd.h>
+#endif
+
 #include <input.hpp>
-#include <windows.h>
 #include <iostream>
 #include <string>
 #include <map>
 #include <fstream>
 #include <sstream>
 #include "configuration.h"
-#include "desktop.h"
 
+#ifdef WIN32
 class SubProcessRunner
 {
 public:
@@ -45,11 +53,70 @@ private:
     std::string         program;
     std::string         desktop;
 };
+#elif __linux__
+class SubProcessRunner
+{
+public:
+    SubProcessRunner(const std::string& program, const std::string desktop)
+        : program(program)
+    {
+        std::cerr << "Will run " << program << std::endl;
+    }
+
+    void runSubProcess()
+    {
+        std::cerr << "Starting sub process ..." << std::endl;
+        pid_t childPid = fork();
+
+        if (childPid == 0) {
+            // Child process
+            execlp(program.c_str(), program.c_str(), nullptr);
+            std::cerr << "Error running " << program << std::endl;
+            _exit(1);
+        }
+        else if (childPid > 0) {
+            // Parent process
+            this->childPid = childPid;
+        }
+        else {
+            // Error forking
+            std::cerr << "Error forking process." << std::endl;
+        }
+    }
+
+    bool active()
+    {
+        int status;
+        pid_t result = waitpid(childPid, &status, WNOHANG);
+        if (result == -1) {
+            // Error occurred while waiting
+            return false;
+        }
+        else if (result == 0) {
+            // Child process still active
+            return true;
+        }
+        else {
+            // Child process terminated
+            return false;
+        }
+    }
+
+private:
+    std::string program;
+    pid_t childPid;
+};
+
+void sigchldHandler(int signo)
+{
+    // This handler does nothing; it's only used to interrupt sleep
+}
+#endif
+
 
 int main(int argc, char *argv[])
 {
     std::map<std::string, std::string> configuration = readConfiguration("config.ini");
-    bool virtualDesktop = (configuration["General/virtualDesktop"].compare("true") == 0);
 
     if (configuration.find("General/Child") != configuration.end())
     {
@@ -58,16 +125,21 @@ int main(int argc, char *argv[])
 
         SubProcessRunner *subProcessRunner;
         std::string desktop = "";
+#ifdef WIN32
+        bool virtualDesktop = (configuration["General/virtualDesktop"].compare("true") == 0);
         if (virtualDesktop)
         {
             desktop = "Argus Desktop";
             createDedicatedDesktop(desktop.c_str(), NULL);
         }
+#endif
         subProcessRunner = new SubProcessRunner(configuration["General/Child"], desktop);
         subProcessRunner->runSubProcess();
 
         while (subProcessRunner->active())
             capt->shoot();
+
+        delete subProcessRunner;
         delete capt;
     }
 }

@@ -2,35 +2,34 @@
 #include "shm.h"
 #include "configuration.h"
 #include "types.h"
+#include <types.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <vector>
+#include <algorithm>
 #include <chrono>
 
+#ifdef WIN32
 #include <windows.h>
-//#include <GL/GL.h>
-#include <stdio.h>
 #include <DXGI.h>
 #include <d3dx9tex.h>
 #include <windows.h>
 #pragma comment(lib, "d3d9.lib")
 #include <d3d9.h>
-#include <vector>
-#include <algorithm>
 #include <dwmapi.h>
 #define STRICT  1
 #include <windows.h>
-
 #include <d3d11.h>
 #include <d3d11sdklayers.h>
 #include <dxgi.h>
 #include <d3dcommon.h>
 #include <D3Dcompiler.h>
 #include <Windows.h>
-
 #include <psapi.h>		// NT only!
-#include <iostream>
-using namespace std;
 #pragma comment(lib, "psapi")	// NT only!
+#endif
 
-#include <types.hpp>
+using namespace std;
 
 std::vector<std::string> removeDuplicates(const std::vector<std::string>& inputVector)
 {
@@ -45,6 +44,7 @@ std::vector<std::string> removeDuplicates(const std::vector<std::string>& inputV
     return resultVector;
 }
 
+#ifdef WIN32
 void GetOpenWindows(std::map<std::string, HWND> & windowList)
 {
     // Enumerate through all top-level windows
@@ -126,38 +126,6 @@ void input::cleanupDirectX()
     }
 }
 
-void input::configureWindow()
-{
-    hWnd = FindWindowA(nullptr, (LPCSTR)title.c_str());
-    if (hWnd == nullptr) {
-        std::map<std::string, HWND> list;
-        GetOpenWindows(list);
-        int i = 1;
-        for (auto it = list.begin(); it != list.end() ; it++)
-            cerr << i++ << ") " << it->first << endl;
-        std::cerr << "wich one ? ";
-        int answer = 0;
-        cin >> answer;
-        auto it = list.begin();
-        for (i = 1; i < list.size() ; i++)
-        {
-            if (i == answer)
-            {
-                hWnd = it->second;
-                title = it->first;
-                configuration["General/title"] = it->first;
-                saveConfiguration(configuration, "config.ini");
-                break;
-            }
-            it++;
-        }
-        FindWindowW(nullptr, (LPCWSTR)title.c_str());
-    }
-    GetClientRect(hWnd, &rect);
-    width = rect.right - rect.left;
-    height = rect.bottom - rect.top;
-}
-
 bool input::initGDI(HWND hWndToCapture)
 {
     hdcScreen = GetDC(nullptr);
@@ -226,6 +194,37 @@ void input::cleanupGDI()
     ReleaseDC(nullptr, hdcScreen);
 }
 
+void input::configureWindow()
+{
+    hWnd = FindWindowA(nullptr, (LPCSTR)title.c_str());
+    if (hWnd == nullptr) {
+        std::map<std::string, HWND> list;
+        GetOpenWindows(list);
+        int i = 1;
+        for (auto it = list.begin(); it != list.end() ; it++)
+            cerr << i++ << ") " << it->first << endl;
+        std::cerr << "wich one ? ";
+        int answer = 0;
+        cin >> answer;
+        auto it = list.begin();
+        for (i = 1; i < list.size() ; i++)
+        {
+            if (i == answer)
+            {
+                hWnd = it->second;
+                title = it->first;
+                configuration["General/title"] = it->first;
+                saveConfiguration(configuration, "config.ini");
+                break;
+            }
+            it++;
+        }
+        FindWindowW(nullptr, (LPCWSTR)title.c_str());
+    }
+    GetClientRect(hWnd, &rect);
+    width = rect.right - rect.left;
+    height = rect.bottom - rect.top;
+}
 
 input::input(std::map<std::string, std::string> &configuration)
     :
@@ -326,3 +325,4 @@ bool input::captureSingleWindow(char * buffer, int& width, int& height) {
 
     return true;
 }
+#endif

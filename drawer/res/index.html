@@ -1,0 +1,19 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="style.css" />
+    <script type="text/javascript" src="ajaxlib.js"></script>
+  </head>
+  <body>
+    <div id="paramTree" style="overflow-x: scroll; overflow-y: scroll;"></div>
+    <div id="paramEdit"></div>
+    <script type="text/javascript">
+    function init()
+    {
+      setPosAndSize("paramTree", "25%","100%", 0, 0, 0);
+      setPosAndSize("paramEdit", "75%","100%", "25%", 0, 0);
+      post("tree.html", {target: "paramEdit", startNode: 0}, "paramTree");
+    }
+    init();
+    </script>
+  </body>
+</html>

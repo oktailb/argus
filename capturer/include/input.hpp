@@ -1,19 +1,21 @@
 #pragma once
 
+#ifdef WIN32
 #include <ddraw.h>
 #include <windows.h>
 #pragma comment(lib, "d3d9.lib")
 #include <d3d9.h>
 #pragma comment(lib, "d3dx9.lib")
 #include <d3dx9.h>
-//#include<d3dx9.h>
+#include <D3dx9tex.h>
+#elif __linux__
 #include <iostream>
 #include <types.hpp>
-#include <D3dx9tex.h>
 #include <vector>
 #include <map>
 #include <string>
 #include "types.h"
+#endif
 
 class input
 {
@@ -23,24 +25,24 @@ public:
 
     std::map<std::string, std::string>                  &configuration;
 
-	HDC													hScrDC;
-	HWND												hWindow;
-	int													width;
+    int													width;
 	int													height;
-    std::string												title;
+    std::string											title;
 	bool												full;
     bool                                                directX;
     bool                                                gdi;
 
-    LPVOID                                              region;
     bool                                                captureSingleWindow(char * buffer, int& width, int& height);
     bool                                                captureFullScreen(char * buffer, int& width, int& height);
 
-	static LRESULT WINAPI								WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	void												shoot();
     void                                                configureWindow();
 
 #ifdef WIN32
+    HDC													hScrDC;
+    HWND												hWindow;
+    LPVOID                                              region;
+    static LRESULT WINAPI								WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     HWND hWnd;
     BITMAPINFOHEADER bi;
     RECT rect;
@@ -65,6 +67,8 @@ public:
     bool initDirectX(HWND hWndToCapture);
     bool captureDirectX(char *buffer);
     void cleanupDirectX();
+#elif __linux__
+    void*                                              region;
 #endif
     t_argusExchange     *header;
 };

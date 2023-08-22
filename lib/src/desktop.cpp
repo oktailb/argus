@@ -1,6 +1,6 @@
 #include "desktop.h"
 #include <iostream>
-
+#ifdef WIN32
 static HDESK    hOriginalThread;
 static HDESK    hOriginalInput;
 static HDESK    hNewDesktop;
@@ -53,3 +53,5 @@ void createDedicatedDesktop(const char * name, HWND thread)
     /* Basculer vers le nouveau bureau */
     SwitchDesktop(hNewDesktop);
 }
+#elif __linux__
+#endif

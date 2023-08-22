@@ -1,0 +1,243 @@
+/*
+ * CSS3 Treeview. No JavaScript
+ * @version 1.0
+ * @author Martin Ivanov
+ * @url developer's website: http://wemakesites.net/
+ * @url developer's twitter: https://twitter.com/#!/wemakesitesnet
+ * @url developer's blog http://acidmartin.wordpress.com/
+ **/
+
+/*
+ * This solution works with all modern browsers and Internet Explorer 9+.
+ * If you are interested in purchasing a JavaScript enabler for IE8
+ * for the CSS3 Treeview, please, check this link:
+ * http://experiments.wemakesites.net/miscellaneous/acidjs-css3-treeview/
+ **/
+
+.css-treeview ul,
+.css-treeview li
+ {
+     padding: 0;
+     margin: 0;
+     list-style: none;
+ }
+
+.css-treeview input
+{
+    position: absolute;
+    opacity: 0;
+}
+
+.css-treeview
+{
+    font: normal 11px "Segoe UI", Arial, Sans-serif;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.css-treeview a
+{
+    color: #00f;
+    text-decoration: none;
+}
+
+.css-treeview a:hover
+            {
+            text-decoration: underline;
+            }
+
+.css-treeview input + label + ul
+{
+    margin: 0 0 0 15px;
+}
+
+.css-treeview input ~ ul
+{
+    display: none;
+}
+
+.css-treeview label,
+.css-treeview label::before
+             {
+                 cursor: pointer;
+             }
+
+.css-treeview input:disabled + label
+                 {
+                 cursor: default;
+                 opacity: .6;
+                 }
+
+.css-treeview input:checked:not(:disabled) ~ ul
+                   {
+                   display: block;
+                   }
+
+.css-treeview label,
+.css-treeview label::before
+             {
+                 background: url("icons.png") no-repeat;
+             }
+
+.css-treeview label,
+.css-treeview a,
+.css-treeview label::before
+             {
+                 display: inline-block;
+                 height: 16px;
+                 line-height: 16px;
+                 vertical-align: middle;
+             }
+
+.css-treeview label
+{
+    background-position: 18px 0;
+}
+
+.css-treeview label::before
+             {
+                 content: "";
+                 width: 16px;
+                 margin: 0 22px 0 0;
+                 vertical-align: middle;
+                 background-position: 0 -32px;
+             }
+
+.css-treeview input:checked + label::before
+                     {
+                         background-position: 0 -16px;
+                     }
+
+.prctable table,
+.prctable th,
+.prctable td
+{
+    border: 1px solid black;
+    border-collapse: collapse;
+    padding: 5px;
+    margin: 0px;
+}
+
+/* webkit adjacent element selector bugfix */
+@media screen and (-webkit-min-device-pixel-ratio:0)
+{
+    .css-treeview
+    {
+    -webkit-animation: webkit-adjacent-element-selector-bugfix infinite 1s;
+    }
+
+    @-webkit-keyframes webkit-adjacent-element-selector-bugfix
+    {
+    from
+    {
+        padding: 0;
+    }
+    to
+    {
+        padding: 0;
+    }
+    }
+}
+
+body
+{
+    border: none;
+    color: white;
+    background-color: #526275;
+}
+
+.rc_tab
+{
+    overflow-x: hidden;
+    margin: 0px 0px 0px 0px;
+    border: 2px inset;
+    background-color: #526275;
+}
+
+.rc fieldset
+{
+    padding: 0px 5px 0px 5px;
+    margin: 0px 30px 0px 0px;
+    border: 2.5px inset;
+    background-color: #728295;
+}
+
+.rc legend
+{
+    padding: 0px 0px 0px 0px;
+    font-size: 20px;
+}
+
+.rc div
+{
+    padding: 0px 5px 0px 5px;
+    margin: 0px;
+    border: 0px inset;
+    background-color: #526275;
+}
+
+.rc_box div
+{
+    padding: 0px 5px 0px 5px;
+    color: white;
+    font: bold 12px "Segoe UI", Arial, Sans-serif;
+    background-color: #526275;
+    border: 2px inset;
+}
+
+.tab_container div
+{
+    background-color: #627285;
+    border: 2.5px inset;
+    padding: 0px 0px 0px 0px;
+}
+
+.rc_content div
+{
+    border: none;
+}
+
+input
+{
+    height: 25px;
+    margin: 1px 0px 4px 10px;
+}
+
+td
+{
+    line-break: auto;
+    text-align: right;
+    padding: 0px 5px 0px 5px;
+}
+
+button.rc_tab
+{
+    padding: 6px 10px;
+    float: left;
+    border: 2px 2px 2px 0px outset black;
+    border-radius: 8px 8px 0px 0px;
+    color: white;
+    width: auto;
+    display: block;
+    outline: 0;
+    #background-image: '/tab_active_bg.png';
+    #background-repeat: repeat;
+    #background-color: #526275;
+}
+
+button.rc_button
+{
+    padding: 6px 10px;
+    margin: 5px 5px 0px 0px;
+    float: right;
+    border: 2px 2px 2px 0px outset black;
+    border-radius: 4px 4px 4px 4px;
+    color: white;
+    width: auto;
+    display: block;
+    outline: 0;
+    background-image: '/tab_active_bg.png';
+    background-repeat: repeat;
+    background-color: #526275;
+}
