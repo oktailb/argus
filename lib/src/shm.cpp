@@ -55,7 +55,7 @@ LPVOID createSHM(const char * key, int size)
 #include <fcntl.h>
 #include <unistd.h>
 
-void* getSHM(const char* key, size_t size) {
+void* getSHM(const char* key, int size) {
     void* shm;
     int fd = shm_open(key, O_RDONLY, 0);
     if (fd == -1) {
@@ -74,7 +74,7 @@ void* getSHM(const char* key, size_t size) {
     return shm;
 }
 
-void* createSHM(const char* key, size_t size) {
+void* createSHM(const char* key, int size) {
     void* shm;
     int fd = shm_open(key, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd == -1) {

@@ -26,7 +26,7 @@ void* createSHM(const char *key, int size);
  * @return a void pointer on the SHM start address
  */
 #ifdef WIN32
-void* getSHM(const char *key, int size);
-#elif __linux__
 LPVOID getSHM(const char *key, int size);
+#elif __linux__
+void* getSHM(const char *key, int size);
 #endif

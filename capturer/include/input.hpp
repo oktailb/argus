@@ -1,5 +1,6 @@
 #pragma once
 
+#include <X11/X.h>
 #ifdef WIN32
 #include <ddraw.h>
 #include <windows.h>
@@ -68,7 +69,11 @@ public:
     bool captureDirectX(char *buffer);
     void cleanupDirectX();
 #elif __linux__
-    void*                                              region;
+    void*               region;
+    Window*             window;
+    bool initXSHM(Window* hWndToCapture);
+    bool captureXSHM(char *buffer);
+    void cleanupXSHM();
 #endif
     t_argusExchange     *header;
 };

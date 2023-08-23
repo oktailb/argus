@@ -1,11 +1,19 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
 
-#include <math.h>
+#include <X11/Xlib.h>
+#ifdef WIN32
 #include <windows.h>
-#include <GL/glew.h>
-#include <GL/GL.h>
 #include <GL/wglext.h>
+#elif __linux__
+#include <X11/X.h>
+#include <X11/Xutil.h>
+#include <X11/extensions/XShm.h>
+#endif
+
+#include <math.h>
+#include <GL/glew.h>
+#include <GL/gl.h>
 #include <map>
 #include <string>
 
@@ -227,8 +235,12 @@ private:
     GLdouble clearColorA;
     t_Point lastPos;
     unsigned int texture;
-    LPVOID shm;
 
+#ifdef WIN32
+    LPVOID shm;
+#elif __linux__
+    void * shm;
+#endif
     GLdouble width;
     GLdouble height;
 

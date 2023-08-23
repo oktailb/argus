@@ -18,7 +18,7 @@ add_executable(${PROJECT_NAME}
 if (WIN32)
     set(CAPTURER_DEPS opengl32 glu32 d3d9 d3dx9 dxgi)
 else()
-    set(CAPTURER_DEPS gl glu)
+    set(CAPTURER_DEPS GL GLU)
 endif(WIN32)
 
 target_link_libraries(${PROJECT_NAME} ${CAPTURER_DEPS} argus)

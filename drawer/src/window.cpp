@@ -133,7 +133,7 @@ if (error != GL_NO_ERROR) { \
 }\
 
 
-void Window::createGLWindow(const char * title, bool fullscreen)
+void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
 {
     // 1. Créer la fenêtre
     hInstance = GetModuleHandle(nullptr);
@@ -242,7 +242,7 @@ void Window::createGLWindow(const char * title, bool fullscreen)
 }
 
 
-Window::Window(std::map<std::string, std::string> configuration)
+ArgusWindow::Window(std::map<std::string, std::string> configuration)
 {
     shiftPressed = false;
     ctrlPressed = false;
@@ -251,7 +251,7 @@ Window::Window(std::map<std::string, std::string> configuration)
     glWidget = new GLWidget(configuration);
 }
 
-void Window::exec()
+void ArgusWindow::exec()
 {
     createGLWindow("Argus", true);
 //    UpdateWindow(hWnd);
@@ -289,7 +289,7 @@ void Window::exec()
     }
 }
 
-Window::~Window()
+ArgusWindow::~Window()
 {
     // 6. Libérez les ressources à la fin
     wglMakeCurrent(nullptr, nullptr);
@@ -298,18 +298,18 @@ Window::~Window()
     DestroyWindow(hWnd);
 }
 
-HWND Window::getGlThread() const
+HWND ArgusWindow::getGlThread() const
 {
     return hWnd;
 }
 
-void Window::mousePressEvent(int button, int x, int y)
+void ArgusWindow::mousePressEvent(int button, int x, int y)
 {
     inMove = true;
     glWidget->setLastPos(x, y);
 }
 
-void Window::mouseMoveEvent(int x, int y)
+void ArgusWindow::mouseMoveEvent(int x, int y)
 {
     x = std::min(x, width);
     y = std::min(y, height);
@@ -319,12 +319,12 @@ void Window::mouseMoveEvent(int x, int y)
     if (inMove && glWidget->inEditMode()) glWidget->movePointTo(x, y);
 }
 
-void Window::mouseReleaseEvent(int button, int x, int y)
+void ArgusWindow::mouseReleaseEvent(int button, int x, int y)
 {
     inMove = false;
 }
 
-void Window::keyReleaseEvent(int key)
+void ArgusWindow::keyReleaseEvent(int key)
 {
     if (key == VK_SHIFT) {
         shiftPressed = false;
@@ -336,7 +336,7 @@ void Window::keyReleaseEvent(int key)
     }
 }
 
-void Window::keyPressEventASCII(char key)
+void ArgusWindow::keyPressEventASCII(char key)
 {
     if (key == 'e') {
         glWidget->toggleEditMode();
@@ -367,7 +367,7 @@ void Window::keyPressEventASCII(char key)
     }
 
 }
-void Window::keyPressEvent(int key)
+void ArgusWindow::keyPressEvent(int key)
 {
     if (key == VK_ESCAPE) {
         exit(0);

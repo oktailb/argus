@@ -23,9 +23,13 @@ set(PROJECT_SOURCES
 
 )
 
-        add_library(${PROJECT_NAME}
-            ${PROJECT_SOURCES}
-        )
-
-target_link_libraries(${PROJECT_NAME} opengl32 glu32)
+add_library(${PROJECT_NAME}
+    ${PROJECT_SOURCES}
+)
+if (WIN32)
+    set(ARGUS_DEPS opengl32 glu32 d3d9 d3dx9 dxgi)
+else()
+    set(ARGUS_DEPS GL GLU)
+endif(WIN32)
+target_link_libraries(${PROJECT_NAME} ${ARGUS_DEPS})
 include_directories(${CMAKE_SOURCE_DIR}/include include)

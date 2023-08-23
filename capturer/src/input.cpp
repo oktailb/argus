@@ -5,6 +5,7 @@
 #include <types.hpp>
 #include <iostream>
 #include <stdio.h>
+#include <unistd.h>
 #include <vector>
 #include <algorithm>
 #include <chrono>
@@ -27,6 +28,8 @@
 #include <Windows.h>
 #include <psapi.h>		// NT only!
 #pragma comment(lib, "psapi")	// NT only!
+#elif __linux__
+#include <X11/X.h>
 #endif
 
 using namespace std;
@@ -323,6 +326,95 @@ bool input::captureSingleWindow(char * buffer, int& width, int& height) {
     if (directX) captureDirectX(buffer);
     else if(gdi) captureGDI(buffer);
 
+    return true;
+}
+#elif __linux__
+void GetOpenWindows(std::map<std::string, Window*> & windowList)
+{
+    return;
+}
+
+bool input::initXSHM(Window* hWndToCapture)
+{
+    return true;
+}
+
+bool input::captureXSHM(char * buffer)
+{
+    return true;
+}
+
+void input::cleanupXSHM()
+{
+}
+
+void input::configureWindow()
+{
+}
+
+input::input(std::map<std::string, std::string> &configuration)
+    :
+    configuration(configuration)
+{
+    bool res;
+
+    title = configuration["General/title"];
+    std::string method = configuration["General/method"];
+    full = (title.compare("full") == 0);
+    directX = (method.compare("directx") == 0);
+    gdi = (method.compare("gdi") == 0);
+
+    configureWindow();
+
+    if (full)
+    {
+    }
+    else
+    {
+        initXSHM(window);
+    }
+
+    std::string out0 = configuration["General/Prefix"] + " Argus SharedMemory";
+
+    const int SHM_SIZE = width*height*4 + sizeof(*header); // Taille de la mémoire partagée
+
+    region = createSHM(out0.c_str(), SHM_SIZE);
+    header = (t_argusExchange*)region;
+    header->width = width;
+    header->height = height;
+    header->size = SHM_SIZE;
+    header->inWrite = false;
+}
+
+input::~input()
+{
+    cleanupXSHM();
+}
+
+void input::shoot()
+{
+    auto begin = std::chrono::high_resolution_clock::now();
+    header->inWrite = true;
+    if (full)
+        captureFullScreen((char*)region + sizeof(*header), width, height);
+    else
+        captureSingleWindow((char*)region + sizeof(*header), width, height);
+    header->inWrite = false;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+    if (duration.count() < 1000/60)
+    {
+        usleep(1000000/60 - duration.count());
+    }
+}
+
+bool input::captureFullScreen(char * buffer, int& width, int& height)
+{
+    return true;
+}
+
+bool input::captureSingleWindow(char * buffer, int& width, int& height) {
+    captureXSHM(buffer);
     return true;
 }
 #endif

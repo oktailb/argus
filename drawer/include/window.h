@@ -4,12 +4,12 @@
 #include <string>
 #include "glwidget.h"
 
-class Window
+class ArgusWindow
 {
 
 public:
-    Window(std::map<std::string, std::string> configuration);
-    ~Window();
+    ArgusWindow(std::map<std::string, std::string> configuration);
+    ~ArgusWindow();
 
     HWND getGlThread() const;
 
