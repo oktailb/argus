@@ -10,6 +10,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+/**
+ * @brief The webRenderer class allows to simply answer to web requests (GET and POST)
+ */
 class webRenderer
 {
 public:
@@ -17,6 +20,11 @@ public:
     webRenderer(std::string mimeType, void * data = NULL);
     ~webRenderer();
 
+    /**
+     * @fn render
+     * @brief To be implemented by the specialized class. The methods have to produce the HTML/whatever code and push it using setData()
+     * @param url
+     */
     virtual void    render(const std::string url) = 0;
 
     void            renderFile(std::string fileName);

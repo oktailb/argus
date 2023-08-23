@@ -11,7 +11,7 @@
     {
       setPosAndSize("paramTree", "25%","100%", 0, 0, 0);
       setPosAndSize("paramEdit", "75%","100%", "25%", 0, 0);
-      post("tree.html", {target: "paramEdit", startNode: 0}, "paramTree");
+      post("setVar", {target: "paramEdit", startNode: 0}, "paramTree");
     }
     init();
     </script>

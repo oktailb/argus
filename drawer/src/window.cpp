@@ -51,16 +51,19 @@
 #include "glwidget.h"
 #include "window.h"
 #include <iostream>
-#include <windows.h>
-#include <windowsx.h>
-#include <winuser.h>
-#include <gl/wglext.h>
-#include <gl/GL.h>
 #include <chrono>
 #include <map>
 #include <string>
 
 #include "shm.h"
+
+#ifdef WIN32
+#include <windows.h>
+#include <windowsx.h>
+#include <winuser.h>
+#include <gl/wglext.h>
+#include <gl/GL.h>
+#endif
 
 // Pointeurs de fonction pour les extensions OpenGL WGL
 typedef BOOL(WINAPI* PFNWGLCHOOSEPIXELFORMATARBPROC)(HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats);
@@ -118,10 +121,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     default:
-        if (ready) these->paintGL();
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        break;
     }
-    return 0;
+    if (ready) these->paintGL();
+    return DefWindowProc(hWnd, message, wParam, lParam);
 }
 #define GLERR {GLenum error = glGetError(); \
 if (error != GL_NO_ERROR) { \
@@ -155,8 +158,8 @@ void Window::createGLWindow(const char * title, bool fullscreen)
     std::string out0 = "prefix Argus SharedMemory";
     LPVOID shm = getSHM(out0.c_str(), sizeof(*header));
     header = (t_argusExchange*) shm;
-    int width = header->width;
-    int height = header->height;
+    width = header->width;
+    height = header->height;
     hWnd = CreateWindow(className, title, windowStyle,
                              0, 0, width, height,
                              nullptr, nullptr,
@@ -255,6 +258,8 @@ void Window::exec()
     glWidget->initializeGL();
     MSG msg = {};
 
+    auto start = std::chrono::high_resolution_clock::now();
+    int counter = 0;
     while (true) {
         auto begin = std::chrono::high_resolution_clock::now();
 
@@ -265,14 +270,21 @@ void Window::exec()
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        glWidget->paintGL();
+        paintGL();
 
         SwapBuffers(hDC);
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
         if (duration.count() < 1000/60)
         {
-            Sleep(1000/60 - duration.count());
+            //Sleep(1000/60 - duration.count());
+        }
+        counter++;
+        if (counter%1000 == 0) {
+            auto step = std::chrono::high_resolution_clock::now();
+            auto lap = std::chrono::duration_cast<std::chrono::milliseconds>(step - start);
+            start = std::chrono::high_resolution_clock::now();
+            std::cerr << 1000.0f * counter / lap.count()  << std::endl;
         }
     }
 }
@@ -299,6 +311,10 @@ void Window::mousePressEvent(int button, int x, int y)
 
 void Window::mouseMoveEvent(int x, int y)
 {
+    x = std::min(x, width);
+    y = std::min(y, height);
+    x = std::max(x, 0);
+    y = std::max(y, 0);
     glWidget->setLastPos(x, y);
     if (inMove && glWidget->inEditMode()) glWidget->movePointTo(x, y);
 }

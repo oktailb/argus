@@ -9,13 +9,13 @@
 #include <d3dx9.h>
 #include <D3dx9tex.h>
 #elif __linux__
+#endif
 #include <iostream>
 #include <types.hpp>
 #include <vector>
 #include <map>
 #include <string>
 #include "types.h"
-#endif
 
 class input
 {

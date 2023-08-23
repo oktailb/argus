@@ -1,6 +1,8 @@
+#ifdef WIN32
+#include <windows.h>
 #include "desktop.h"
 #include <iostream>
-#ifdef WIN32
+
 static HDESK    hOriginalThread;
 static HDESK    hOriginalInput;
 static HDESK    hNewDesktop;

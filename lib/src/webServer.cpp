@@ -225,7 +225,7 @@ MHD_Result webServer::answer_to_connection (void *                      cls,
 
                 if (NULL == con_info->postprocessor)
                 {
-                    free (con_info);
+                    delete (con_info);
                     return MHD_NO;
                 }
                 con_info->connectiontype = POST;

@@ -72,12 +72,18 @@ void webRenderer::setConnexionInfo(struct connection_info_struct *value)
 
 void webRenderer::setVar(std::string & key, const std::string & value)
 {
-    postVars[key] = value;
+    if (postVars.find(key) != postVars.end())
+        postVars[key] = value;
 }
 
 const std::string webRenderer::getVar(const std::string key) const
 {
-    return postVars.at(key);
+    if (postVars.find(key) != postVars.end())
+        return postVars.at(key);
+    std::string list;
+    for(auto it = postVars.begin() ; it != postVars.end() ; it++)
+        list += it->first + "" + it->second + "<br>\n";
+    return(list);
 }
 
 webRenderer::postVarList * webRenderer::getVarMap()

@@ -54,6 +54,12 @@ struct	s_Point
         s_Point res {-x, -y};
         return res;
     }
+
+    inline bool operator== (const struct s_Point &other) {
+        return (   (other.x == this->x)
+                && (other.y == this->y)
+               );
+    }
 };
 
 typedef struct s_Point t_Point;

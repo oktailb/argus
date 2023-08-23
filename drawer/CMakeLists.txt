@@ -7,9 +7,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -pipe -fPIC" )
-set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -pie" )
-
 find_package(GLEW REQUIRED)
 message("GLEW location: " ${GLEW_INCLUDE_DIRS})
 
@@ -39,7 +36,7 @@ function(create_resources dir output)
     endforeach()
 endfunction()
 
-create_resources(${CMAKE_CURRENT_LIST_DIR}/res ${CMAKE_CURRENT_LIST_DIR}/src/resources.c)
+create_resources(${CMAKE_CURRENT_LIST_DIR}/res ${CMAKE_CURRENT_LIST_DIR}/include/resources.h)
 
 # Display resources in IDE
 add_custom_target(resources SOURCES
@@ -58,7 +55,7 @@ set(PROJECT_SOURCES
         src/drawQuad.cpp
         src/drawQuadFdf.cpp
         src/drawQuadFdfRec.cpp
-        src/resources.c
+                                include/resources.h
 )
 
 add_executable(${PROJECT_NAME}

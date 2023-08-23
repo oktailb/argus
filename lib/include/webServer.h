@@ -6,14 +6,10 @@
 #include <string.h>
 #include <string>
 #include <stdarg.h>
-//#include <fnmatch.h>
 #include <sys/types.h>
-//#include <sys/select.h>
-//#include <sys/socket.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
-//#include <sys/inotify.h>
 #include <map>
 #include <sstream>
 
@@ -27,7 +23,6 @@
 #define GRETING_PAGE "<html><body><h1>Welcome, %s!</center></h1></body></html>"
 #define ERROR_PAGE "<html><body>This doesn't seem to be right.</body></html>"
 
-#include "webResource.h"
 #include "webRenderer.h"
 
 struct connection_info_struct
@@ -58,11 +53,6 @@ private:
     std::string localeContent;
 };
 
-///
-/// @brief Server class for web remote control
-/// @date 31/10/2019
-/// @author VLE
-///
 class webServer
 {
 public:
