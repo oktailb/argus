@@ -1,6 +1,5 @@
 #pragma once
 
-#include <X11/X.h>
 #ifdef WIN32
 #include <ddraw.h>
 #include <windows.h>
@@ -10,6 +9,7 @@
 #include <d3dx9.h>
 #include <D3dx9tex.h>
 #elif __linux__
+#include <X11/X.h>
 #endif
 #include <iostream>
 #include <types.hpp>

@@ -1,21 +1,21 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
 
-#include <X11/Xlib.h>
-#ifdef WIN32
-#include <windows.h>
-#include <GL/wglext.h>
-#elif __linux__
-#include <X11/X.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/XShm.h>
-#endif
-
 #include <math.h>
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <map>
 #include <string>
+
+#ifdef WIN32
+#include <windows.h>
+#include <GL/wglext.h>
+#elif __linux__
+#include <X11/Xlib.h>
+#include <X11/X.h>
+#include <X11/Xutil.h>
+#include <X11/extensions/XShm.h>
+#endif
 
 #include "types.h"
 

@@ -180,6 +180,16 @@ bool input::captureGDI(char * buffer)
         return (NULL);
     }
 
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            char* pixel = buffer + (y * width + x) * 4; // 3 bytes per pixel (RGB)
+
+            // Inverser les canaux R et B
+            unsigned char temp = pixel[0]; // R
+            pixel[0] = pixel[2]; // B
+            pixel[2] = temp; // R
+        }
+    }
 
     DeleteObject(hBitmapOld);
     DeleteObject(hBitmap);

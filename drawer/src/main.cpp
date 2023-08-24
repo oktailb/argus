@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     bool virtualDesktop = (configuration["General/virtualDesktop"] == "true");
 
     webServer *srv = new webServer(configuration["General/webServerInterface"], std::stoi(configuration["General/webServerPort"]));
-    Window w(configuration);
+    ArgusWindow w(configuration);
 
     srv->addResource("/ajaxlib.js"  , new ajaxLibRenderer(std::string("text/javascript"), srv));
     srv->addResource("/style.css"   , new cssRenderer(std::string("text/css")           , srv));

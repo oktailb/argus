@@ -120,7 +120,7 @@ GLWidget::~GLWidget()
 
 #define GLERR {GLenum error = glGetError(); \
 if (error != GL_NO_ERROR) { \
-    std::cerr << "OpenGL error: " << error << " on line " << __LINE__ << ": "  << std::endl; \
+    std::cerr << "OpenGL error: " << error << " in file " << __FILE__ << " on line " << __LINE__ << ": "  << std::endl; \
 }\
 }\
 
@@ -176,7 +176,7 @@ void GLWidget::updateTextureFromSharedMemory() {
     width = header->width;
     height = header->height;
     while (header->inWrite);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_BGRA, header->width, header->height, 0, GL_BGRA, GL_UNSIGNED_BYTE, (char*)shm + sizeof(*header));
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, header->width, header->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (char*)shm + sizeof(*header));
     GLERR;
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

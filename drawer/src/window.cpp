@@ -73,7 +73,7 @@ static bool ready = false;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    Window *these = (Window*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+    ArgusWindow *these = (ArgusWindow*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
     switch (message)
     {
 
@@ -242,7 +242,7 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
 }
 
 
-ArgusWindow::Window(std::map<std::string, std::string> configuration)
+ArgusWindow::ArgusWindow(std::map<std::string, std::string> configuration)
 {
     shiftPressed = false;
     ctrlPressed = false;
@@ -289,7 +289,7 @@ void ArgusWindow::exec()
     }
 }
 
-ArgusWindow::~Window()
+ArgusWindow::~ArgusWindow()
 {
     // 6. Libérez les ressources à la fin
     wglMakeCurrent(nullptr, nullptr);
