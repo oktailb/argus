@@ -10,6 +10,13 @@
 #include <D3dx9tex.h>
 #elif __linux__
 #include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/Xresource.h>
+#include <X11/Xutil.h>
+#include <X11/extensions/XTest.h>
+#include <X11/keysym.h>
+#include <X11/extensions/XShm.h>
 #endif
 #include <iostream>
 #include <types.hpp>
@@ -70,8 +77,12 @@ public:
     void cleanupDirectX();
 #elif __linux__
     void*               region;
-    Window*             window;
-    bool initXSHM(Window* hWndToCapture);
+    Display *           display;
+    Window              root;
+    XWindowAttributes   attributes;
+    XShmSegmentInfo     shminfo;
+    XImage *            ximg;
+    bool initXSHM(Window hWndToCapture);
     bool captureXSHM(char *buffer);
     void cleanupXSHM();
 #endif

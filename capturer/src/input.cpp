@@ -30,6 +30,11 @@
 #pragma comment(lib, "psapi")	// NT only!
 #elif __linux__
 #include <X11/X.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <X11/extensions/Xrandr.h>
+#include <dirent.h>
+#include <string.h>
 #endif
 
 using namespace std;
@@ -337,23 +342,282 @@ void GetOpenWindows(std::map<std::string, Window*> & windowList)
     return;
 }
 
-bool input::initXSHM(Window* hWndToCapture)
+bool input::initXSHM(Window hWndToCapture)
 {
+    //attributes = {0};
+    XGetWindowAttributes(display, root, &attributes);
+    if (width == 0)
+        width = attributes.width;
+    if (height == 0)
+        height = attributes.height;
+
+    ximg = XShmCreateImage(display,
+                                    DefaultVisualOfScreen(attributes.screen),
+                                    DefaultDepthOfScreen(attributes.screen),
+                                    ZPixmap, NULL,
+                                    &shminfo,
+                                    width, height);
+
+    shminfo.shmid = shmget(IPC_PRIVATE, ximg->bytes_per_line * ximg->height, IPC_CREAT|0777);
+    shminfo.shmaddr = ximg->data = (char*)shmat(shminfo.shmid, 0, 0);
+    shminfo.readOnly = False;
+    if(shminfo.shmid < 0)
+        puts("Fatal shminfo error!");;
+    Status s1 = XShmAttach(display, &shminfo);
+    printf("XShmAttach() %s\n", s1 ? "success!" : "failure!");
     return true;
 }
 
 bool input::captureXSHM(char * buffer)
 {
+    XShmGetImage(display, root, ximg, 0, 0, 0x00ffffff);
     return true;
 }
 
 void input::cleanupXSHM()
 {
+    XCloseDisplay(display);
+}
+
+void testAlternative()
+{
+    Display *disp;
+    XRRScreenResources *context;
+    XRROutputInfo *info;
+    XRRCrtcInfo *crtc_info;
+    int iscres;
+    int icrtc;
+
+    disp = XOpenDisplay(0);
+    context = XRRGetScreenResources (disp, DefaultRootWindow(disp));
+    for (iscres = context->noutput; iscres > 0; )
+    {
+        --iscres;
+
+        info = XRRGetOutputInfo (disp, context, context->outputs[iscres]);
+        if (info->connection == RR_Connected)
+        {
+            for (icrtc = info->ncrtc; icrtc > 0;)
+            {
+                --icrtc;
+
+                crtc_info = XRRGetCrtcInfo (disp, context, context->crtcs[icrtc]);
+                fprintf(stderr, "==> coord : %dx%d size: %dx%d\n", crtc_info->x, crtc_info->y, crtc_info->width, crtc_info->height);
+
+                XRRFreeCrtcInfo(crtc_info);
+            }
+        }
+        XRRFreeOutputInfo (info);
+    }
+    XRRFreeScreenResources(context);
+}
+
+
+char *getWindowName (Display *disp, Window win)
+{
+    Atom prop = XInternAtom(disp,"WM_NAME",False), type;
+    int form;
+    unsigned long remain, len;
+    unsigned char *list;
+
+
+    if (XGetWindowProperty(disp, win, prop, 0, 1024, False, AnyPropertyType,
+                           &type, &form, &len, &remain, &list) != Success)
+    {
+
+        return NULL;
+    }
+
+    return (char*)list;
+}
+
+Window *getWindowList (Display *disp, unsigned long *len)
+{
+    Atom prop = XInternAtom(disp,"_NET_CLIENT_LIST",False), type;
+    int form;
+    unsigned long remain;
+    unsigned char *list;
+
+    if (XGetWindowProperty(disp,XDefaultRootWindow(disp),prop,0,1024,False,XA_WINDOW,
+                           &type,&form,len,&remain,&list) != Success)
+    {
+        return 0;
+    }
+
+    return (Window*)list;
+}
+
+void listWindows(Display *disp)
+{
+    int i;
+    unsigned long len;
+    Window *list;
+    char *name;
+
+    list = (Window*)getWindowList(disp,&len);
+    for (i=0;i<(int)len;i++)
+    {
+        name = getWindowName(disp,list[i]);
+        XWindowAttributes attributes = {0};
+        XGetWindowAttributes(disp, list[i], &attributes);
+        printf("\t%d :  %s %dx%d\n",i,name, attributes.width, attributes.height);
+        free(name);
+    }
+}
+
+void listDisplay()
+{
+    DIR* d = opendir("/tmp/.X11-unix");
+
+    if (d != NULL)
+    {
+        struct dirent *dr;
+        while ((dr = readdir(d)) != NULL)
+        {
+            if (dr->d_name[0] != 'X')
+                continue;
+            char display_name[64] = ":";
+            strcat(display_name, dr->d_name + 1);
+
+            Display *disp = XOpenDisplay(display_name);
+            if (disp != NULL)
+            {
+                int count = XScreenCount(disp);
+                printf("Display %s has %d screens\n", display_name, count);
+                int i;
+                for (i=0; i<count; i++)
+                    printf("%s : %dx%d\n", XDisplayString(disp), XDisplayWidth(disp, i), XDisplayHeight(disp, i));
+                printf("Display %s the following windows:\n", display_name);
+                listWindows(disp);
+                XCloseDisplay(disp);
+            }
+        }
+        closedir(d);
+    }
+    testAlternative();
+}
+
+
+Window windowFromNameSearch(Display *display, Window current, char const *needle)
+{
+    Window retval, root, parent, *children;
+    unsigned children_count;
+    char *name = NULL;
+
+    /* Check if this window has the name we seek */
+    if(XFetchName(display, current, &name) > 0)
+    {
+        int r = strcmp(needle, name);
+        XFree(name);
+        if(r == 0)
+        {
+            return current;
+        }
+    }
+
+    retval = 0;
+
+    /* If it does not: check all subwindows recursively. */
+    if(0 != XQueryTree(display, current, &root, &parent, &children, &children_count))
+    {
+        unsigned i;
+        for(i = 0; i < children_count; ++i)
+        {
+            Window win = windowFromNameSearch(display, children[i], needle);
+
+            if(win != 0)
+            {
+                retval = win;
+                break;
+            }
+        }
+
+        XFree(children);
+    }
+
+    return retval;
+}
+
+
+
+
+Window windowFromPidSearch(Display *display, Window current, unsigned long  _pid)
+{
+    // Get the PID for the current Window.
+    Atom            type;
+    int             format;
+    unsigned long   nItems;
+    unsigned long   bytesAfter;
+    unsigned char * propPID = 0;
+    Atom            _atomPID;
+    Window          retval, root, parent, *children;
+    unsigned        children_count;
+
+    retval = 0;
+    _atomPID = XInternAtom(display, "_NET_WM_PID", True);
+    if(_atomPID == None)
+    {
+        printf("No such atom\n");
+        return current;
+    }
+
+    if(Success == XGetWindowProperty(display, current, _atomPID, 0, 1, False, XA_CARDINAL,
+                                      &type, &format, &nItems, &bytesAfter, &propPID))
+    {
+        if(propPID != 0)
+        {
+            // If the PID matches, add this window to the result set.
+            if(_pid == *((unsigned long *)propPID))
+            {
+                XFree(propPID);
+                return(current);
+            }
+            XFree(propPID);
+        }
+    }
+
+    /* If it does not: check all subwindows recursively. */
+    if(0 != XQueryTree(display, current, &root, &parent, &children, &children_count))
+    {
+        unsigned i;
+        for(i = 0; i < children_count; ++i)
+        {
+            Window win = windowFromPidSearch(display, children[i], _pid);
+
+            if(win != 0)
+            {
+                retval = win;
+                break;
+            }
+        }
+
+        XFree(children);
+    }
+
+    return retval;
 }
 
 void input::configureWindow()
 {
+    display = XOpenDisplay(":0");
+    if (display == NULL)
+    {
+        listDisplay();
+        exit(EXIT_FAILURE);
+    }
+    root = windowFromNameSearch(display, XDefaultRootWindow(display), title.c_str());
+    if (root == 0)
+    {
+        printf("Impossible to open '%s' window\n", title.c_str());
+        listDisplay();
+        exit(EXIT_FAILURE);
+    }
+    //attributes = {0};
+    XGetWindowAttributes(display, root, &attributes);
+    width = attributes.width;
+    height = attributes.height;
 }
+
 
 input::input(std::map<std::string, std::string> &configuration)
     :
@@ -374,7 +638,7 @@ input::input(std::map<std::string, std::string> &configuration)
     }
     else
     {
-        initXSHM(window);
+        initXSHM(root);
     }
 
     std::string out0 = configuration["General/Prefix"] + " Argus SharedMemory";
