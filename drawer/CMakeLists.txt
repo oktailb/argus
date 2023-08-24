@@ -66,7 +66,7 @@ add_executable(${PROJECT_NAME}
 if (WIN32)
     set(DRAWER_DEPS opengl32 glu32)
 else()
-    set(DRAWER_DEPS gl glu)
+    set(DRAWER_DEPS GL GLU X11 Xext)
 endif(WIN32)
 
 target_link_libraries(${PROJECT_NAME} ${DRAWER_DEPS} argus GLEW::GLEW microhttpd)

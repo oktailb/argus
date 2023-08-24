@@ -12,7 +12,9 @@
 GLWidget::GLWidget(std::map<std::string, std::string> configuration)
     : configuration(configuration)
 {
+#ifdef WIN32
     virtualDesktop = (configuration["General/virtualDesktop"] == "true");
+#endif
     videoSync = (configuration["General/videoSync"] == "true");
     fps = (stoi(configuration["General/fps"]));
 
@@ -364,7 +366,9 @@ void GLWidget::save(std::string conf)
     configuration["General/QuadRec"] = std::to_string(quadLevel);
     configuration["General/SmoothLen"] = std::to_string(pillowModel.SmoothLen);
     configuration["General/title"] = title;
+#ifdef WIN32
     configuration["General/virtualDesktop"] = virtualDesktop?"true":"false";
+#endif
     configuration["General/fps"] = std::to_string(fps);
     configuration["General/videoSync"] = videoSync?"true":"false";
 

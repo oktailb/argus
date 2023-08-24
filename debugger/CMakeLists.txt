@@ -17,7 +17,7 @@ add_executable(${PROJECT_NAME}
 if (WIN32)
     set(DEBUGGER_DEPS opengl32 glu32)
 else()
-    set(DEBUGGER_DEPS gl glu)
+    set(DEBUGGER_DEPS GL GLU X11 Xext)
 endif(WIN32)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${DEBUGGER_DEPS} argus)

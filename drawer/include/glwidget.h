@@ -15,6 +15,8 @@
 #include <X11/X.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XShm.h>
+#include <X11/Xlib.h>
+#include <GL/glx.h>
 #endif
 
 #include "types.h"
@@ -284,9 +286,9 @@ private:
     HBITMAP                     hCaptureBitmap;
     BITMAPINFOHEADER   			hBitmapInfo;
     bool                        virtualDesktop;
+#endif
     int                         fps;
     bool                        videoSync;
-#endif
     int                         endLoop;
     bool                        editMode;
     int                         recursionLevel;

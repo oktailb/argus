@@ -1,52 +1,4 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the examples of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:BSD$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** BSD License Usage
-** Alternatively, you may use this file under the terms of the BSD license
-** as follows:
-**
-** "Redistribution and use in source and binary forms, with or without
-** modification, are permitted provided that the following conditions are
-** met:
-**   * Redistributions of source code must retain the above copyright
-**     notice, this list of conditions and the following disclaimer.
-**   * Redistributions in binary form must reproduce the above copyright
-**     notice, this list of conditions and the following disclaimer in
-**     the documentation and/or other materials provided with the
-**     distribution.
-**   * Neither the name of The Qt Company Ltd nor the names of its
-**     contributors may be used to endorse or promote products derived
-**     from this software without specific prior written permission.
-**
-**
-** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-** "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-** LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-** A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-** OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-** SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-** LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-** DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-** THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-** (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-** OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+#define XK_MISCELLANY
 
 #include "glwidget.h"
 #include "window.h"
@@ -54,6 +6,8 @@
 #include <chrono>
 #include <map>
 #include <string>
+#include <GL/gl.h>
+#include <unistd.h>
 
 #include "shm.h"
 
@@ -62,8 +16,6 @@
 #include <windowsx.h>
 #include <winuser.h>
 #include <gl/wglext.h>
-#include <gl/GL.h>
-#endif
 
 // Pointeurs de fonction pour les extensions OpenGL WGL
 typedef BOOL(WINAPI* PFNWGLCHOOSEPIXELFORMATARBPROC)(HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats);
@@ -130,11 +82,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 if (error != GL_NO_ERROR) { \
         std::cerr << "OpenGL error: " << error << " on line " << __LINE__ << ": "  << std::endl; \
 }\
-}\
+}
 
+#elif __linux__
+#include <X11/Xlib.h>
+#include <GL/glx.h>
+
+int WaitForNotify(Display* display, XEvent* event, XPointer arg)
+{
+    return (event->type == MapNotify) && (event->xmap.window == *((Window*)arg));
+}
+#endif
 
 void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
 {
+#ifdef WIN32
     // 1. Créer la fenêtre
     hInstance = GetModuleHandle(nullptr);
     className = "OpenGLWindow";
@@ -238,6 +200,46 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
     // 5. Affichez la fenêtre et entrez dans la boucle de messages
     ShowWindow(hWnd, SW_SHOW);
     SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)this);
+
+#elif __linux__
+    display = XOpenDisplay(nullptr);
+    if (!display)
+    {
+        std::cerr << "Failed to open X display." << std::endl;
+        return;
+    }
+
+    t_argusExchange* header;
+    std::string out0 = "prefix Argus SharedMemory";
+    void* shm = getSHM(out0.c_str(), sizeof(*header));
+    header = (t_argusExchange*)shm;
+    width = header->width;
+    height = header->height;
+
+    GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
+    XVisualInfo* vi = glXChooseVisual(display, DefaultScreen(display), att);
+
+    if (!vi)
+    {
+        std::cerr << "No appropriate visual found." << std::endl;
+        return;
+    }
+
+    Colormap cmap = XCreateColormap(display, RootWindow(display, vi->screen), vi->visual, AllocNone);
+
+    XSetWindowAttributes swa;
+    swa.colormap = cmap;
+    swa.event_mask = ExposureMask | KeyPressMask;
+
+    window = XCreateWindow(display, RootWindow(display, vi->screen), 0, 0, width, height, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+
+    XStoreName(display, window, title);
+    XMapWindow(display, window);
+    XIfEvent(display, &event, WaitForNotify, reinterpret_cast<XPointer>(&window));
+
+    context = glXCreateContext(display, vi, nullptr, GL_TRUE);
+    glXMakeCurrent(display, window, context);
+#endif
     ready = true;
 }
 
@@ -260,7 +262,7 @@ void ArgusWindow::exec()
     createGLWindow("Argus", true);
     //    UpdateWindow(hWnd);
     glWidget->initializeGL();
-    MSG msg = {};
+
 
     auto start = std::chrono::high_resolution_clock::now();
     int counter = 0;
@@ -268,6 +270,8 @@ void ArgusWindow::exec()
     while (true) {
         auto begin = std::chrono::high_resolution_clock::now();
 
+#ifdef WIN32
+        MSG msg = {};
         if (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE)) {
             if (msg.message == WM_QUIT)
                 break;
@@ -275,9 +279,69 @@ void ArgusWindow::exec()
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+#elif __linux__
+        if (XPending(display))
+        {
+            XNextEvent(display, &event);
+            switch (event.type)
+            {
+//                if (ready) resizeGL(newWidth, newHeight);
+
+            case KeyPress:
+            {
+                KeySym key = XLookupKeysym(&event.xkey, 0);
+                keyPressEvent(key);
+                break;
+            }
+
+            case KeyRelease:
+            {
+                KeySym key = XLookupKeysym(&event.xkey, 0);
+                keyReleaseEvent(key);
+                break;
+            }
+
+            case ButtonPress:
+            {
+                int x = event.xbutton.x;
+                int y = event.xbutton.y;
+                if (event.xbutton.button == Button1)
+                {
+                    mousePressEvent(1, x, y);
+                }
+                break;
+            }
+
+            case ButtonRelease:
+            {
+                int x = event.xbutton.x;
+                int y = event.xbutton.y;
+                if (event.xbutton.button == Button1)
+                {
+                    mouseReleaseEvent(1, x, y);
+                }
+                break;
+            }
+
+            case MotionNotify:
+            {
+                int x = event.xmotion.x;
+                int y = event.xmotion.y;
+                mouseMoveEvent(x, y);
+                break;
+            }
+
+            default:
+                break;
+            }
+        }
+
+#endif
         paintGL();
 
+#ifdef WIN32
         SwapBuffers(hDC);
+#endif
 
         if (videoSync)
         {
@@ -285,7 +349,11 @@ void ArgusWindow::exec()
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
             if (duration.count() < delayMs)
             {
+#ifdef WIN32
                 Sleep(delayMs - duration.count());
+#elif __linux__
+                usleep(1000*(delayMs - duration.count()));
+#endif
             }
         }
         counter++;
@@ -300,17 +368,28 @@ void ArgusWindow::exec()
 
 ArgusWindow::~ArgusWindow()
 {
-    // 6. Libérez les ressources à la fin
-    wglMakeCurrent(nullptr, nullptr);
-    wglDeleteContext(hRC);
-    ReleaseDC(hWnd, hDC);
-    DestroyWindow(hWnd);
+    if (ready)
+    {
+#ifdef WIN32
+        wglMakeCurrent(nullptr, nullptr);
+        wglDeleteContext(hRC);
+        ReleaseDC(hWnd, hDC);
+        DestroyWindow(hWnd);
+#elif __linux__
+        glXMakeCurrent(display, None, nullptr);
+        glXDestroyContext(display, context);
+        XDestroyWindow(display, window);
+        XCloseDisplay(display);
+#endif
+    }
 }
 
+#ifdef WIN32
 HWND ArgusWindow::getGlThread() const
 {
     return hWnd;
 }
+#endif
 
 void ArgusWindow::mousePressEvent(int button, int x, int y)
 {
@@ -332,6 +411,8 @@ void ArgusWindow::mouseReleaseEvent(int button, int x, int y)
 {
     inMove = false;
 }
+
+#ifdef WIN32
 
 void ArgusWindow::keyReleaseEvent(int key)
 {
@@ -417,4 +498,84 @@ void ArgusWindow::keyPressEvent(int key)
         std::cerr << "KEY == " << key << std::endl;
     }
 }
+#elif __linux__
 
+
+void ArgusWindow::keyReleaseEvent(int key)
+{
+    if (key == XK_Shift_L) {
+        shiftPressed = false;
+        glWidget->setStep(shiftPressed*ctrlPressed*500 + shiftPressed*100 + ctrlPressed*10 + 1);
+    }
+    if (key == XK_Control_L) {
+        ctrlPressed = false;
+        glWidget->setStep(shiftPressed*ctrlPressed*500 + shiftPressed*100 + ctrlPressed*10 + 1);
+    }
+}
+
+void ArgusWindow::keyPressEvent(int key)
+{
+    if (key == 'e') {
+        glWidget->toggleEditMode();
+    }
+    else if (key == 'r') {
+        glWidget->adjustR(ctrlPressed);
+    }
+    else if (key == 'g') {
+        glWidget->adjustG(ctrlPressed);
+    }
+    else if (key == 'b') {
+        glWidget->adjustB(ctrlPressed);
+    }
+    else if (key == 's') {
+        glWidget->save("config.ini");
+    }
+    else if ((key >= '1') && (key <= '9')) {
+        glWidget->selectPoint(key - '0');
+    }
+    else if ((key == '+') || (key == '=')) {
+        glWidget->increasePillowRecursion();
+    }
+    else if (key == '-') {
+        glWidget->decreasePillowRecursion();
+    }
+    else if (key == XK_Escape) {
+        exit(0);
+    }
+    else if (key == XK_Home) {
+        glWidget->increaseSmoothLen();
+    }
+    else if (key == XK_End) {
+        glWidget->decreaseSmoothLen();
+    }
+    else if (key == XK_Page_Up) {
+        glWidget->increaseAlpha();
+    }
+    else if (key == XK_Page_Down) {
+        glWidget->decreaseAlpha();
+    }
+    else if (key == XK_Up) {
+        glWidget->movePointUp();
+    }
+    else if (key == XK_Up) {
+        glWidget->movePointDown();
+    }
+    else if (key == XK_Left) {
+        glWidget->movePointLeft();
+    }
+    else if (key ==XK_Right) {
+        glWidget->movePointRight();
+    }
+    else if (key == XK_Shift_L) {
+        shiftPressed = true;
+        glWidget->setStep(shiftPressed*ctrlPressed*500 + shiftPressed*100 + ctrlPressed*10 + 1);
+    }
+    else if (key == XK_Control_L) {
+        ctrlPressed = true;
+        glWidget->setStep(shiftPressed*ctrlPressed*500 + shiftPressed*100 + ctrlPressed*10 + 1);
+    }
+    else {
+        std::cerr << "KEY == " << key << std::endl;
+    }
+}
+#endif

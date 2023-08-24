@@ -154,7 +154,12 @@ int main(int argc, char *argv[])
                 auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
                 if (duration.count() < delayMs)
                 {
+#ifdef WIN32
                     Sleep(delayMs - duration.count());
+#elif __linux__
+                    usleep(1000*(delayMs - duration.count()));
+#endif
+
                 }
             }
             counter++;
