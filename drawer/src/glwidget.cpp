@@ -22,16 +22,9 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
 
     std::string out0 = prefix + " Argus SharedMemory";
 
-    width = 1920;
-    height = 1080;
-
     selectedPointX = 1;
     selectedPointY = 1;
     step = 1;
-
-    windowWidth = width;
-    windowHeight = height;
-
     editMode = false;
 
     Zlevel = 1;
@@ -48,24 +41,6 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
     t_Point NW = {std::stod(configuration["Geometry/NWx"]), std::stod(configuration["Geometry/NWy"])};
     t_Point SW = {std::stod(configuration["Geometry/SWx"]), std::stod(configuration["Geometry/SWy"])};
     t_Point C  = {std::stod(configuration["Geometry/Cx"]) , std::stod(configuration["Geometry/Cy"])};
-
-    t_Point zero = {0.0, 0.0};
-    if (SE == zero
-     && SW == zero
-     && NE == zero
-     && NW == zero)
-    {
-        NW = {0.0, 0.0};
-        NE = {width, 0.0};
-        SW = {0.0, height};
-        SE = {width, height};
-        N = (NW + NE) / 2.0;
-        S = (SW + SE) / 2.0;
-        E = (NE + SE) / 2.0;
-        W = (NW + SW) / 2.0;
-        C = (N + S + E + W) / 4.0;
-    }
-
     GLfloat Na  = std::stod(configuration["Blending/Na"]);
     GLfloat Sa  = std::stod(configuration["Blending/Sa"]);
     GLfloat Ea  = std::stod(configuration["Blending/Ea"]);
@@ -83,6 +58,25 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
     header = (t_argusExchange*) getSHM(out0.c_str(), sizeof(*header));
     width = header->width;
     height = header->height;
+    windowWidth = width;
+    windowHeight = height;
+
+    t_Point zero = {0.0, 0.0};
+    if (SE == zero
+        && SW == zero
+        && NE == zero
+        && NW == zero)
+    {
+        NW = {0.0, 0.0};
+        NE = {width, 0.0};
+        SW = {0.0, height};
+        SE = {width, height};
+        N = (NW + NE) / 2.0;
+        S = (SW + SE) / 2.0;
+        E = (NE + SE) / 2.0;
+        W = (NW + SW) / 2.0;
+        C = (N + S + E + W) / 4.0;
+    }
 
     pillowModel = {
         {
