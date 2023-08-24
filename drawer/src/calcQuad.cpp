@@ -1,25 +1,69 @@
 #include "glwidget.h"
 
+
+void		GLWidget::drawQuadFdf(t_Quad h, int sub, GLuint id, float level, int active)
+{
+    glCallList(glListIndexGrid);
+}
+
+void		GLWidget::calcQuadFdf(t_Quad h, int sub, GLuint id, float level, int active)
+{
+    glNewList(glListIndexGrid, GL_COMPILE);
+        glBegin( GL_LINE_LOOP );
+            calcQuadFdfRec(h, sub, id, level, active);
+        glEnd();
+    glEndList();
+}
+
+void		GLWidget::calcQuadFdfRec(t_Quad h, int sub, GLuint id, float level, int active)
+{
+    if (sub == 1)
+    {
+        if (active)
+            glColor4f(0.0f, 0.8f, 0.0f, 1.0f);
+        else
+            glColor4f(0.7f, 0.7f, 0.7f, 0.4f);
+        glVertex3d      (h.points[UpLeft].x       , h.points[UpLeft].y, level - 0.01f);
+        glVertex3d      (h.points[DownLeft].x     , h.points[DownLeft].y, level - 0.01f);
+        glVertex3d      (h.points[DownRight].x    , h.points[DownRight].y, level - 0.01f);
+        glVertex3d      (h.points[UpRight].x      , h.points[UpRight].y, level - 0.01f);
+    }
+    else
+    {
+        t_Quad h1 = h;
+        t_Quad h2 = h;
+        t_Quad h3 = h;
+        t_Quad h4 = h;
+
+        //les quads
+        h1.points[UpRight]		= (h.points[UpLeft]		+ h.points[UpRight]) / 2;
+        h1.points[DownLeft]		= (h.points[UpLeft]		+ h.points[DownLeft]) / 2;
+        h1.points[DownRight]    = (h.points[UpLeft]		+ h.points[DownRight]	+ h.points[DownLeft]		+ h.points[UpRight]) / 4;
+
+        h2.points[UpLeft]         = (h.points[UpLeft]	+ h.points[UpRight])/2;
+        h2.points[DownLeft]		= (h.points[DownLeft]   + h.points[UpRight]	+	h.points[UpLeft]			+ h.points[DownRight])/4;
+        h2.points[DownRight]      = (h.points[DownRight]+ h.points[UpRight])/2;
+
+        h3.points[UpLeft]         = (h.points[UpLeft]		+ h.points[DownLeft])/2;
+        h3.points[UpRight]		= (h.points[UpLeft]		+ h.points[DownRight]	+	h.points[DownLeft]		+ h.points[UpRight])/4;
+        h3.points[DownRight]      = (h.points[DownLeft]     + h.points[DownRight])/2;
+
+        h4.points[UpLeft]         = (h.points[UpLeft]		+ h.points[DownRight]	+	h.points[DownLeft]		+ h.points[UpRight])/4;
+        h4.points[UpRight]		= (h.points[UpRight]      + h.points[DownRight])/2;
+        h4.points[DownLeft]		= (h.points[DownLeft]     + h.points[DownRight])/2;
+
+        calcQuadFdfRec(h1, sub - 1, id, level, active);
+        calcQuadFdfRec(h2, sub - 1, id, level, active);
+        calcQuadFdfRec(h3, sub - 1, id, level, active);
+        calcQuadFdfRec(h4, sub - 1, id, level, active);
+    }
+}
+
 void		GLWidget::drawQuadRec(t_Quad h, int sub, GLuint id, float level, int show_border, int active)
 {
     glBindTexture  (GL_TEXTURE_2D, id);
     if (sub == 1)
     {
-        if (show_border)
-        {
-            glBindTexture  (GL_TEXTURE_2D, 0);
-            if (active)
-                glColor4f(0.0f, 0.8f, 0.0f, 1.0f);
-            else
-                glColor4f(0.7f, 0.7f, 0.7f, 0.4f);
-            glBegin( GL_LINE_LOOP );
-            glVertex3d      (h.points[UpLeft].x       , h.points[UpLeft].y, level - 0.01f);
-            glVertex3d      (h.points[DownLeft].x     , h.points[DownLeft].y, level - 0.01f);
-            glVertex3d      (h.points[DownRight].x    , h.points[DownRight].y, level - 0.01f);
-            glVertex3d      (h.points[UpRight].x      , h.points[UpRight].y, level - 0.01f);
-            glEnd();
-            glBindTexture  (GL_TEXTURE_2D, id);
-        }
         glBegin( GL_QUADS );
         glTexCoord2d    (h.texture[UpLeft].x      , h.texture[UpLeft].y );
         glColor4d       (h.r, h.g, h.b, h.alpha[UpLeft]);
@@ -271,88 +315,88 @@ void GLWidget::drawPillow(PillowGraphy p, int sub, GLuint id, float level, int s
         linearA[OriginUpRight  ] = p.alpha[Up][Right];
 
         PillowGraphy p1 =
-        {
             {
-                {linear[OriginUpLeft], linear[BUpLeft]     , linear[OriginUp]    },
-                {linear[BLeftUp]     , linear[CenterUpLeft], linear[JoinUp]      },
-                {linear[OriginLeft]  , linear[JoinLeft]    , linear[OriginCenter]},
-            },
-            {
-                {linearTP[OriginUpLeft], linearTP[BUpLeft]     , linearTP[OriginUp]    },
-                {linearTP[BLeftUp]     , linearTP[CenterUpLeft], linearTP[JoinUp]      },
-                {linearTP[OriginLeft]  , linearTP[JoinLeft]    , linearTP[OriginCenter]},
-            },
-            {
-                {linearA[OriginUpLeft], linearA[BUpLeft]     , linearA[OriginUp]    },
-                {linearA[BLeftUp]     , linearA[CenterUpLeft], linearA[JoinUp]      },
-                {linearA[OriginLeft]  , linearA[JoinLeft]    , linearA[OriginCenter]},
-            },
-            p.r, p.g, p.b,
-            0.0, 0.0
-        };
+                {
+                 {linear[OriginUpLeft], linear[BUpLeft]     , linear[OriginUp]    },
+                 {linear[BLeftUp]     , linear[CenterUpLeft], linear[JoinUp]      },
+                 {linear[OriginLeft]  , linear[JoinLeft]    , linear[OriginCenter]},
+                 },
+                {
+                 {linearTP[OriginUpLeft], linearTP[BUpLeft]     , linearTP[OriginUp]    },
+                 {linearTP[BLeftUp]     , linearTP[CenterUpLeft], linearTP[JoinUp]      },
+                 {linearTP[OriginLeft]  , linearTP[JoinLeft]    , linearTP[OriginCenter]},
+                 },
+                {
+                 {linearA[OriginUpLeft], linearA[BUpLeft]     , linearA[OriginUp]    },
+                 {linearA[BLeftUp]     , linearA[CenterUpLeft], linearA[JoinUp]      },
+                 {linearA[OriginLeft]  , linearA[JoinLeft]    , linearA[OriginCenter]},
+                 },
+                p.r, p.g, p.b,
+                0.0, 0.0
+            };
 
         PillowGraphy p2 =
-        {
             {
-                {linear[OriginLeft]    , linear[JoinLeft]      , linear[OriginCenter]},
-                {linear[BDownLeft]     , linear[CenterDownLeft], linear[JoinDown]    },
-                {linear[OriginDownLeft], linear[BLeftDown]     , linear[OriginDown]  },
-            },
-            {
-                {linearTP[OriginLeft]    , linearTP[JoinLeft]      , linearTP[OriginCenter]},
-                {linearTP[BDownLeft]     , linearTP[CenterDownLeft], linearTP[JoinDown]    },
-                {linearTP[OriginDownLeft], linearTP[BLeftDown]     , linearTP[OriginDown]  },
-            },
-            {
-                {linearA[OriginLeft]    , linearA[JoinLeft]      , linearA[OriginCenter]},
-                {linearA[BDownLeft]     , linearA[CenterDownLeft], linearA[JoinDown]    },
-                {linearA[OriginDownLeft], linearA[BLeftDown]     , linearA[OriginDown]  },
-            },
-            p.r, p.g, p.b,
-            0.0, 0.0
-        };
+                {
+                 {linear[OriginLeft]    , linear[JoinLeft]      , linear[OriginCenter]},
+                 {linear[BDownLeft]     , linear[CenterDownLeft], linear[JoinDown]    },
+                 {linear[OriginDownLeft], linear[BLeftDown]     , linear[OriginDown]  },
+                 },
+                {
+                 {linearTP[OriginLeft]    , linearTP[JoinLeft]      , linearTP[OriginCenter]},
+                 {linearTP[BDownLeft]     , linearTP[CenterDownLeft], linearTP[JoinDown]    },
+                 {linearTP[OriginDownLeft], linearTP[BLeftDown]     , linearTP[OriginDown]  },
+                 },
+                {
+                 {linearA[OriginLeft]    , linearA[JoinLeft]      , linearA[OriginCenter]},
+                 {linearA[BDownLeft]     , linearA[CenterDownLeft], linearA[JoinDown]    },
+                 {linearA[OriginDownLeft], linearA[BLeftDown]     , linearA[OriginDown]  },
+                 },
+                p.r, p.g, p.b,
+                0.0, 0.0
+            };
 
         PillowGraphy p3 =
-        {
             {
-                {linear[OriginCenter], linear[JoinRight]      , linear[OriginRight]    },
-                {linear[JoinDown]    , linear[CenterDownRight], linear[BRightDown]     },
-                {linear[OriginDown]  , linear[BDownRight]     , linear[OriginDownRight]},
-            },
-            {
-                {linearTP[OriginCenter], linearTP[JoinRight]      , linearTP[OriginRight]    },
-                {linearTP[JoinDown]    , linearTP[CenterDownRight], linearTP[BRightDown]     },
-                {linearTP[OriginDown]  , linearTP[BDownRight]     , linearTP[OriginDownRight]},
-            },
-            {
-                {linearA[OriginCenter], linearA[JoinRight]      , linearA[OriginRight]    },
-                {linearA[JoinDown]    , linearA[CenterDownRight], linearA[BRightDown]     },
-                {linearA[OriginDown]  , linearA[BDownRight]     , linearA[OriginDownRight]},
-            },
-            p.r, p.g, p.b,
-            0.0, 0.0
-        };
+                {
+                 {linear[OriginCenter], linear[JoinRight]      , linear[OriginRight]    },
+                 {linear[JoinDown]    , linear[CenterDownRight], linear[BRightDown]     },
+                 {linear[OriginDown]  , linear[BDownRight]     , linear[OriginDownRight]},
+                 },
+                {
+                 {linearTP[OriginCenter], linearTP[JoinRight]      , linearTP[OriginRight]    },
+                 {linearTP[JoinDown]    , linearTP[CenterDownRight], linearTP[BRightDown]     },
+                 {linearTP[OriginDown]  , linearTP[BDownRight]     , linearTP[OriginDownRight]},
+                 },
+                {
+                 {linearA[OriginCenter], linearA[JoinRight]      , linearA[OriginRight]    },
+                 {linearA[JoinDown]    , linearA[CenterDownRight], linearA[BRightDown]     },
+                 {linearA[OriginDown]  , linearA[BDownRight]     , linearA[OriginDownRight]},
+                 },
+                p.r, p.g, p.b,
+                0.0, 0.0
+            };
 
         PillowGraphy p4 =
-        {
             {
-                {linear[OriginUp]    , linear[BUpRight]     , linear[OriginUpRight]},
-                {linear[JoinUp]      , linear[CenterUpRight], linear[BRightUp]     },
-                {linear[OriginCenter], linear[JoinRight]    , linear[OriginRight]  },
-            },
-            {
-                {linearTP[OriginUp]    , linearTP[BUpRight]     , linearTP[OriginUpRight]},
-                {linearTP[JoinUp]      , linearTP[CenterUpRight], linearTP[BRightUp]     },
-                {linearTP[OriginCenter], linearTP[JoinRight]    , linearTP[OriginRight]  },
-            },
-            {
-                {linearA[OriginUp]    , linearA[BUpRight]     , linearA[OriginUpRight]},
-                {linearA[JoinUp]      , linearA[CenterUpRight], linearA[BRightUp]     },
-                {linearA[OriginCenter], linearA[JoinRight]    , linearA[OriginRight]  },
-            },
-            p.r, p.g, p.b,
-            0.0, 0.0
-        };
+                {
+                 {linear[OriginUp]    , linear[BUpRight]     , linear[OriginUpRight]},
+                 {linear[JoinUp]      , linear[CenterUpRight], linear[BRightUp]     },
+                 {linear[OriginCenter], linear[JoinRight]    , linear[OriginRight]  },
+                 },
+                {
+                 {linearTP[OriginUp]    , linearTP[BUpRight]     , linearTP[OriginUpRight]},
+                 {linearTP[JoinUp]      , linearTP[CenterUpRight], linearTP[BRightUp]     },
+                 {linearTP[OriginCenter], linearTP[JoinRight]    , linearTP[OriginRight]  },
+                 },
+                {
+                 {linearA[OriginUp]    , linearA[BUpRight]     , linearA[OriginUpRight]},
+                 {linearA[JoinUp]      , linearA[CenterUpRight], linearA[BRightUp]     },
+                 {linearA[OriginCenter], linearA[JoinRight]    , linearA[OriginRight]  },
+                 },
+                p.r, p.g, p.b,
+                0.0, 0.0
+            };
 
         drawPillow(p1, sub - 1, id, level, show_border, active);
         drawPillow(p2, sub - 1, id, level, show_border, active);

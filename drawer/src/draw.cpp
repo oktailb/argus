@@ -12,7 +12,6 @@ void GLWidget::drawEditMode(PillowGraphy p, int sub, GLuint id, float level, int
     {
         for (int pointy = 0 ; pointy < 3 ; pointy++)
         {
-
             if (DIST(p.points[pointx][pointy], mouseCoord) < crossSize)
             {
                 drawCross(p.points[pointx][pointy].x, p.points[pointx][pointy].y, crossSize, TextureID, Zlevel, true);

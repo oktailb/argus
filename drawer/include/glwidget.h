@@ -258,6 +258,9 @@ private:
     void    calcQuadFdf    ();
     void    drawPillow(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active);
     void    drawEditMode(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active);
+    void	drawQuadFdf(t_Quad h, int sub, GLuint id, float level, int active);
+    void	calcQuadFdf(t_Quad h, int sub, GLuint id, float level, int active);
+    void	calcQuadFdfRec(t_Quad h, int sub, GLuint id, float level, int active);
 
     /// delta ms between readibg two consecutive frame
     unsigned int                deltaMs;
@@ -281,6 +284,8 @@ private:
     HBITMAP                     hCaptureBitmap;
     BITMAPINFOHEADER   			hBitmapInfo;
     bool                        virtualDesktop;
+    int                         fps;
+    bool                        videoSync;
 #endif
     int                         endLoop;
     bool                        editMode;

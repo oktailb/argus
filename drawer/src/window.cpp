@@ -128,7 +128,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 #define GLERR {GLenum error = glGetError(); \
 if (error != GL_NO_ERROR) { \
-    std::cerr << "OpenGL error: " << error << " on line " << __LINE__ << ": "  << std::endl; \
+        std::cerr << "OpenGL error: " << error << " on line " << __LINE__ << ": "  << std::endl; \
 }\
 }\
 
@@ -161,9 +161,9 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
     width = header->width;
     height = header->height;
     hWnd = CreateWindow(className, title, windowStyle,
-                             0, 0, width, height,
-                             nullptr, nullptr,
-                             hInstance, nullptr);
+                        0, 0, width, height,
+                        nullptr, nullptr,
+                        hInstance, nullptr);
 
 
     // 2. Obtenez le contexte de périphérique (HDC) de la fenêtre
@@ -200,28 +200,28 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
         if (wglChoosePixelFormatARB && wglCreateContextAttribsARB)
         {
             int pixelFormatAttribs[] =
-            {
-                WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-                WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-                WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-                WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
-                WGL_COLOR_BITS_ARB, 32,
-                WGL_DEPTH_BITS_ARB, 24,
-                WGL_STENCIL_BITS_ARB, 8,
-                0
-            };
+                {
+                    WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+                    WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+                    WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
+                    WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+                    WGL_COLOR_BITS_ARB, 32,
+                    WGL_DEPTH_BITS_ARB, 24,
+                    WGL_STENCIL_BITS_ARB, 8,
+                    0
+                };
 
             int pixelFormat;
             UINT numFormats;
             wglChoosePixelFormatARB(hDC, pixelFormatAttribs, nullptr, 1, &pixelFormat, &numFormats);
 
             const int contextAttribs[] =
-            {
-                WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
-                WGL_CONTEXT_MINOR_VERSION_ARB, 6,
-                WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-                0
-            };
+                {
+                    WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+                    WGL_CONTEXT_MINOR_VERSION_ARB, 6,
+                    WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+                    0
+                };
 
             hRC = wglCreateContextAttribsARB(hDC, nullptr, contextAttribs);
             wglMakeCurrent(hDC, hRC);
@@ -249,17 +249,22 @@ ArgusWindow::ArgusWindow(std::map<std::string, std::string> configuration)
     inMove = false;
     fullscreen = (configuration["General/virtualDesktop"].compare("true") == 0);
     glWidget = new GLWidget(configuration);
+    fps = std::stoi(configuration["General/fps"]);
+    delayMs = 1000.0f / fps;
+    videoSync = (configuration["General/videoSync"].compare("true") == 0);
+
 }
 
 void ArgusWindow::exec()
 {
     createGLWindow("Argus", true);
-//    UpdateWindow(hWnd);
+    //    UpdateWindow(hWnd);
     glWidget->initializeGL();
     MSG msg = {};
 
     auto start = std::chrono::high_resolution_clock::now();
     int counter = 0;
+
     while (true) {
         auto begin = std::chrono::high_resolution_clock::now();
 
@@ -273,18 +278,22 @@ void ArgusWindow::exec()
         paintGL();
 
         SwapBuffers(hDC);
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
-        if (duration.count() < 1000/60)
+
+        if (videoSync)
         {
-            //Sleep(1000/60 - duration.count());
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+            if (duration.count() < delayMs)
+            {
+                Sleep(delayMs - duration.count());
+            }
         }
         counter++;
         if (counter%1000 == 0) {
             auto step = std::chrono::high_resolution_clock::now();
             auto lap = std::chrono::duration_cast<std::chrono::milliseconds>(step - start);
             start = std::chrono::high_resolution_clock::now();
-            std::cerr << 1000.0f * counter / lap.count()  << std::endl;
+            std::cerr << "Draw FPS: " << 1000.0f * counter / lap.count()  << std::endl;
         }
     }
 }

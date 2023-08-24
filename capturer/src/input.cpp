@@ -302,19 +302,12 @@ input::~input()
 
 void input::shoot()
 {
-    auto begin = std::chrono::high_resolution_clock::now();
     header->inWrite = true;
     if (full)
         captureFullScreen((char*)region + sizeof(*header), width, height);
     else
         captureSingleWindow((char*)region + sizeof(*header), width, height);
     header->inWrite = false;
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
-    if (duration.count() < 1000/60)
-    {
-        Sleep(1000/60 - duration.count());
-    }
 }
 
 bool input::captureFullScreen(char * buffer, int& width, int& height)

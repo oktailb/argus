@@ -23,11 +23,15 @@ public:
     void resizeGL(int width, int height) {glWidget->resizeGL(width, height);}
     void paintGL() {glWidget->paintGL();}
 private:
+    int         fps;
+    double      delayMs;
+
     GLWidget *  glWidget;
     bool        shiftPressed;
     bool        ctrlPressed;
     bool        inMove;
     bool        fullscreen;
+    bool        videoSync;
     int         width;
     int         height;
 #ifdef WIN32

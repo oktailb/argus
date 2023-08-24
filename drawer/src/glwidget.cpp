@@ -13,6 +13,8 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
     : configuration(configuration)
 {
     virtualDesktop = (configuration["General/virtualDesktop"] == "true");
+    videoSync = (configuration["General/videoSync"] == "true");
+    fps = (stoi(configuration["General/fps"]));
 
     prefix = configuration["General/Prefix"];
     child = configuration["General/Child"];
@@ -369,6 +371,8 @@ void GLWidget::save(std::string conf)
     configuration["General/SmoothLen"] = std::to_string(pillowModel.SmoothLen);
     configuration["General/title"] = title;
     configuration["General/virtualDesktop"] = virtualDesktop?"true":"false";
+    configuration["General/fps"] = std::to_string(fps);
+    configuration["General/videoSync"] = videoSync?"true":"false";
 
     saveConfiguration(configuration, "config.ini");
 }
@@ -384,20 +388,20 @@ void GLWidget::selectPoint(int id)
     }
     case 2:
     {
-        selectedPointX = Center;
-        selectedPointY = Down;
+        selectedPointX = Left;
+        selectedPointY = Middle;
         break;
     }
     case 3:
     {
-        selectedPointX = Right;
-        selectedPointY = Down;
+        selectedPointX = Left;
+        selectedPointY = Up;
         break;
     }
     case 4:
     {
-        selectedPointX = Left;
-        selectedPointY = Middle;
+        selectedPointX = Center;
+        selectedPointY = Down;
         break;
     }
     case 5:
@@ -408,20 +412,20 @@ void GLWidget::selectPoint(int id)
     }
     case 6:
     {
-        selectedPointX = Right;
-        selectedPointY = Middle;
+        selectedPointX = Center;
+        selectedPointY = Up;
         break;
     }
     case 7:
     {
-        selectedPointX = Left;
-        selectedPointY = Up;
+        selectedPointX = Right;
+        selectedPointY = Down;
         break;
     }
     case 8:
     {
-        selectedPointX = Center;
-        selectedPointY = Up;
+        selectedPointX = Right;
+        selectedPointY = Middle;
         break;
     }
     case 9:
