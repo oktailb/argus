@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(edgeBlendingDrawer VERSION 0.1 LANGUAGES CXX)
+project(argusDrawer VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -71,8 +71,3 @@ endif(WIN32)
 
 target_link_libraries(${PROJECT_NAME} ${DRAWER_DEPS} argus GLEW::GLEW microhttpd)
 include_directories(${CMAKE_SOURCE_DIR}/include include ../capturer/include ../lib/include ${GLEW_INCLUDE_DIRS})
-
-install(TARGETS ${PROJECT_NAME}
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(edgeBlendingDebugger VERSION 0.1 LANGUAGES CXX)
+project(argusDebugger VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 17)
