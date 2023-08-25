@@ -1,6 +1,6 @@
 #include "glwidget.h"
 
-void GLWidget::drawQuadFast()
+void GLWidget::drawQuad()
 {
     glCallList(glListIndexPicture);
 }

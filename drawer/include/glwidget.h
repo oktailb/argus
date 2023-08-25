@@ -249,16 +249,16 @@ private:
     int windowWidth;
     int windowHeight;
 
-    void    draw           ();
     void    drawCross      (double x, double y, double size, GLuint id, float level, bool active);
-    void    drawQuadFdf    (int level, int x, int y, int w, int h);
-    void    drawQuadFdfRec ();
-    void	drawQuadRec(t_Quad h, int sub, GLuint id, float level, int show_border, int active);
-    void    drawQuadFast   ();
-    void    drawQuadFdfFast();
-    void    calcQuad       ();
-    void    calcQuadFdf    ();
-    void    drawPillow(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active);
+    void	calcQuadRec(t_Quad h, int sub, GLuint id, float level, int show_border, int active);
+    void    drawQuad();
+    void    calcQuad();
+    void    drawPillowFdf();
+    void    drawPillow();
+    void    calcPillow(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active);
+    void    calcPillowRec(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active);
+    void    calcPillowFdf(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active);
+    void    calcPillowFdfRec(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active);
     void    drawEditMode(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active);
     void	drawQuadFdf(t_Quad h, int sub, GLuint id, float level, int active);
     void	calcQuadFdf(t_Quad h, int sub, GLuint id, float level, int active);

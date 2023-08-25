@@ -110,6 +110,7 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
 
     int size = header->size + sizeof(*header);
     shm = (t_argusExchange *)getSHM(out0.c_str(), size);
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
 }
 
 GLWidget::~GLWidget()
@@ -119,7 +120,9 @@ GLWidget::~GLWidget()
 #define GLERR {GLenum error = glGetError(); \
 if (error != GL_NO_ERROR) { \
     std::cerr << "OpenGL error: " << error << " in file " << __FILE__ << " on line " << __LINE__ << ": "  << std::endl; \
-}\
+} \
+else \
+    std::cerr << "No error "  << __FILE__ << " on line " << __LINE__ << ": " << std::endl; \
 }\
 
 void GLWidget::initializeGL()
@@ -128,44 +131,28 @@ void GLWidget::initializeGL()
     //initializeOpenGLFunctions();
     // Activation des fonctionnalités OpenGL nécessaires pour le rendu 2D et les textures
     glMatrixMode(GL_PROJECTION);
-    GLERR
     glLoadIdentity();
-    GLERR
     glOrtho(0, width, 0, height, -10.0, 10.0); // Projection orthographique 2D
-    GLERR
     glMatrixMode(GL_MODELVIEW);
-    GLERR
     glLoadIdentity();
-    GLERR
 
     glEnable(GL_TEXTURE_2D);
-    GLERR
     glGenTextures(1, &texture);
-    GLERR
     glBindTexture(GL_TEXTURE_2D, texture);
-    GLERR
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    GLERR
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    GLERR
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    GLERR
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    GLERR
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    GLERR
     glEnable( GL_BLEND );
-    GLERR
 
     clearColorR = 0.0f;
     clearColorG = 0.0f;
     clearColorB = 0.0f;
     clearColorA = 1.0f;
     glClearColor(clearColorR, clearColorG, clearColorB, clearColorA);
-    GLERR
 
-    // Assurez-vous que la texture est mise à jour avant le rendu
-    //updateTextureFromSharedMemory();
+    updateTextureFromSharedMemory();
 }
 
 void GLWidget::updateTextureFromSharedMemory() {
@@ -174,13 +161,14 @@ void GLWidget::updateTextureFromSharedMemory() {
     width = header->width;
     height = header->height;
     while (header->inWrite);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, header->width, header->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (char*)shm + sizeof(*header));
-    GLERR;
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (unsigned char*)shm + sizeof(*header));
+    //GLERR;
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, NULL);
 }
 
 void GLWidget::paintGL()
@@ -190,9 +178,12 @@ void GLWidget::paintGL()
 
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    drawPillow(pillowModel, recursionLevel, texture, Zlevel, editMode, 1);
+    drawPillow();
     if (editMode)
-        drawEditMode(pillowModel, recursionLevel, texture, Zlevel + 1, editMode, 1);
+    {
+        drawPillowFdf();
+        drawEditMode(pillowModel, recursionLevel, texture, Zlevel + 1, true, true);
+    }
 }
 
 void GLWidget::resizeGL(int width, int height)
@@ -201,42 +192,58 @@ void GLWidget::resizeGL(int width, int height)
     windowHeight = height;
     int side = std::min(width, height);
     glViewport((width - side) / 2, (height - side) / 2, side, side);
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::setStep(int newStep)
 {
     step = newStep;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::setLastPos(int x, int y)
 {
     lastPos.x = x;
     lastPos.y = y;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::toggleEditMode()
 {
     editMode = !editMode;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::increaseAlpha()
 {
     pillowModel.alpha[selectedPointX][selectedPointY] += 0.01;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::decreaseAlpha()
 {
     pillowModel.alpha[selectedPointX][selectedPointY] -= 0.01;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::increaseSmoothLen()
 {
     smoothLen += 0.01;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::decreaseSmoothLen()
 {
     smoothLen -= 0.01;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::increasePillowRecursion()
@@ -246,6 +253,8 @@ void GLWidget::increasePillowRecursion()
     recursionLevel++;
     if (recursionLevel >= 16)
         recursionLevel = 15;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::decreasePillowRecursion()
@@ -255,6 +264,8 @@ void GLWidget::decreasePillowRecursion()
     recursionLevel--;
     if (recursionLevel <= 1)
         recursionLevel = 1;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::increaseQuadRecursion()
@@ -264,6 +275,8 @@ void GLWidget::increaseQuadRecursion()
     quadLevel++;
     if (quadLevel >= 16)
         quadLevel = 15;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::decreaseQuadRecursion()
@@ -273,32 +286,44 @@ void GLWidget::decreaseQuadRecursion()
     quadLevel--;
     if (quadLevel <= 1)
         quadLevel = 1;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::movePointTo(int x, int y)
 {
     pillowModel.points[selectedPointX][selectedPointY].x = x;
     pillowModel.points[selectedPointX][selectedPointY].y = height - y;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::movePointUp()
 {
     pillowModel.points[selectedPointX][selectedPointY].y += step;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::movePointDown()
 {
     pillowModel.points[selectedPointX][selectedPointY].y -= step;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::movePointLeft()
 {
     pillowModel.points[selectedPointX][selectedPointY].x -= step;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::movePointRight()
 {
     pillowModel.points[selectedPointX][selectedPointY].x += step;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::adjustR(bool way)
@@ -307,6 +332,8 @@ void GLWidget::adjustR(bool way)
         pillowModel.r += 0.01;
     else
         pillowModel.r -= 0.01;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::adjustG(bool way)
@@ -315,6 +342,8 @@ void GLWidget::adjustG(bool way)
         pillowModel.g += 0.01;
     else
         pillowModel.g -= 0.01;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::adjustB(bool way)
@@ -323,6 +352,8 @@ void GLWidget::adjustB(bool way)
         pillowModel.b += 0.01;
     else
         pillowModel.b -= 0.01;
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::save(std::string conf)
@@ -433,5 +464,6 @@ void GLWidget::selectPoint(int id)
         break;
     }
     }
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
 }
 

@@ -8,25 +8,21 @@ void		GLWidget::drawQuadFdf(t_Quad h, int sub, GLuint id, float level, int activ
 
 void		GLWidget::calcQuadFdf(t_Quad h, int sub, GLuint id, float level, int active)
 {
-    glNewList(glListIndexGrid, GL_COMPILE);
-        glBegin( GL_LINE_LOOP );
-            calcQuadFdfRec(h, sub, id, level, active);
-        glEnd();
-    glEndList();
+    calcQuadFdfRec(h, sub, id, level, active);
 }
 
 void		GLWidget::calcQuadFdfRec(t_Quad h, int sub, GLuint id, float level, int active)
 {
     if (sub == 1)
     {
-        if (active)
-            glColor4f(0.0f, 0.8f, 0.0f, 1.0f);
-        else
-            glColor4f(0.7f, 0.7f, 0.7f, 0.4f);
-        glVertex3d      (h.points[UpLeft].x       , h.points[UpLeft].y, level - 0.01f);
-        glVertex3d      (h.points[DownLeft].x     , h.points[DownLeft].y, level - 0.01f);
-        glVertex3d      (h.points[DownRight].x    , h.points[DownRight].y, level - 0.01f);
-        glVertex3d      (h.points[UpRight].x      , h.points[UpRight].y, level - 0.01f);
+        glColor4f(0.0f, 0.8f, 0.0f, 0.0f);
+        glVertex3d      (h.points[UpLeft].x       , h.points[UpLeft].y, level);
+        glColor4f(0.0f, 0.8f, 0.0f, 0.0f);
+        glVertex3d      (h.points[DownLeft].x     , h.points[DownLeft].y, level);
+        glColor4f(0.0f, 0.8f, 0.0f, 0.0f);
+        glVertex3d      (h.points[DownRight].x    , h.points[DownRight].y, level);
+        glColor4f(0.0f, 0.8f, 0.0f, 0.0f);
+        glVertex3d      (h.points[UpRight].x      , h.points[UpRight].y, level);
     }
     else
     {
@@ -59,12 +55,11 @@ void		GLWidget::calcQuadFdfRec(t_Quad h, int sub, GLuint id, float level, int ac
     }
 }
 
-void		GLWidget::drawQuadRec(t_Quad h, int sub, GLuint id, float level, int show_border, int active)
+void		GLWidget::calcQuadRec(t_Quad h, int sub, GLuint id, float level, int show_border, int active)
 {
     glBindTexture  (GL_TEXTURE_2D, id);
     if (sub == 1)
     {
-        glBegin( GL_QUADS );
         glTexCoord2d    (h.texture[UpLeft].x      , h.texture[UpLeft].y );
         glColor4d       (h.r, h.g, h.b, h.alpha[UpLeft]);
         glVertex3d      (h.points[UpLeft].x       , h.points[UpLeft].y, level);
@@ -77,7 +72,6 @@ void		GLWidget::drawQuadRec(t_Quad h, int sub, GLuint id, float level, int show_
         glTexCoord2d    (h.texture[UpRight].x     , h.texture[UpRight].y );
         glColor4d       (h.r, h.g, h.b, h.alpha[UpRight]);
         glVertex3d      (h.points[UpRight].x      , h.points[UpRight].y, level);
-        glEnd();
     }
     else
     {
@@ -138,10 +132,10 @@ void		GLWidget::drawQuadRec(t_Quad h, int sub, GLuint id, float level, int show_
         h4.alpha[DownLeft]	= (h.alpha[DownLeft]	+ h.alpha[DownRight])/2;
 
 
-        drawQuadRec(h1, sub - 1, id, level, show_border, active);
-        drawQuadRec(h2, sub - 1, id, level, show_border, active);
-        drawQuadRec(h3, sub - 1, id, level, show_border, active);
-        drawQuadRec(h4, sub - 1, id, level, show_border, active);
+        calcQuadRec(h1, sub - 1, id, level, show_border, active);
+        calcQuadRec(h2, sub - 1, id, level, show_border, active);
+        calcQuadRec(h3, sub - 1, id, level, show_border, active);
+        calcQuadRec(h4, sub - 1, id, level, show_border, active);
     }
 }
 
@@ -200,14 +194,186 @@ t_Quad pillow2Quad(int x, int y, PillowGraphy p)
     return res;
 }
 
-void GLWidget::drawPillow(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active)
+void GLWidget::drawPillowFdf()
+{
+    glCallList(glListIndexGrid);
+}
+
+void GLWidget::drawPillow()
+{
+    glCallList(glListIndexPicture);
+}
+
+void GLWidget::calcPillowFdf(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active)
+{
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glEndList();
+
+    glNewList(glListIndexGrid, GL_COMPILE);
+        glBegin( GL_QUADS );
+            calcPillowFdfRec(p, sub, id, level, show_border, active);
+        glEnd();
+    glEndList();
+}
+
+void GLWidget::calcPillowFdfRec(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active)
 {
     if (sub == 1)
     {
-        drawQuadRec(pillow2Quad(0, 0, p), quadLevel, id, level, show_border, active);
-        drawQuadRec(pillow2Quad(0, 1, p), quadLevel, id, level, show_border, active);
-        drawQuadRec(pillow2Quad(1, 0, p), quadLevel, id, level, show_border, active);
-        drawQuadRec(pillow2Quad(1, 1, p), quadLevel, id, level, show_border, active);
+        calcQuadFdfRec(pillow2Quad(0, 0, p), quadLevel, id, level, active);
+        calcQuadFdfRec(pillow2Quad(0, 1, p), quadLevel, id, level, active);
+        calcQuadFdfRec(pillow2Quad(1, 0, p), quadLevel, id, level, active);
+        calcQuadFdfRec(pillow2Quad(1, 1, p), quadLevel, id, level, active);
+    }
+    else
+    {
+        // linearisation !
+        t_Point	    linear[25];
+
+        // les bords
+        linear[BUpLeft]     = calc_linear(p.points[Up]    [Left]    , p.points[Up]    [Center]   , p.points[Up]  [Right]);
+        linear[BLeftUp]     = calc_linear(p.points[Up]    [Left]    , p.points[Middle][Left]     , p.points[Down][Left] );
+        linear[BDownLeft]   = calc_linear(p.points[Down]  [Left]    , p.points[Middle][Left]     , p.points[Up]  [Left] );
+        linear[BLeftDown]   = calc_linear(p.points[Down]  [Left]    , p.points[Down]  [Center]   , p.points[Down][Right]);
+        linear[BDownRight]  = calc_linear(p.points[Down]  [Right]   , p.points[Down]  [Center]   , p.points[Down][Left]);
+        linear[BRightDown]  = calc_linear(p.points[Down]  [Right]   , p.points[Middle][Right]    , p.points[Up]  [Right]);
+        linear[BRightUp]    = calc_linear(p.points[Up]    [Right]   , p.points[Middle][Right]    , p.points[Down][Right]);
+        linear[BUpRight]    = calc_linear(p.points[Up]    [Right]   , p.points[Up]    [Center]   , p.points[Up]  [Left]);
+
+        // les joints
+        linear[JoinUp]      = calc_linear(p.points[Up]    [Center]  , p.points[Middle][Center]   , p.points[Down]  [Center]);
+        linear[JoinDown]    = calc_linear(p.points[Down]  [Center]  , p.points[Middle][Center]   , p.points[Up]    [Center]);
+        linear[JoinLeft]    = calc_linear(p.points[Middle][Left]    , p.points[Middle][Center]   , p.points[Middle][Right]);
+        linear[JoinRight]   = calc_linear(p.points[Middle][Right]   , p.points[Middle][Center]   , p.points[Middle][Left]);
+
+        // les centres
+        linear[CenterUpLeft]    = calc_linear(linear[BLeftUp]   , linear[JoinUp]    , linear[BRightUp]  );
+        linear[CenterDownLeft]  = calc_linear(linear[BDownLeft] , linear[JoinDown]  , linear[BRightDown]);
+        linear[CenterDownRight] = calc_linear(linear[BDownRight], linear[JoinRight] , linear[BUpRight]  );
+        linear[CenterUpRight]   = calc_linear(linear[BUpRight]  , linear[JoinRight] , linear[BDownRight]);
+
+        linear[OriginUp       ] = p.points[Up][Center];
+        linear[OriginLeft     ] = p.points[Middle][Left];
+        linear[OriginDown     ] = p.points[Down][Center];
+        linear[OriginRight    ] = p.points[Middle][Right];
+        linear[OriginCenter   ] = p.points[Middle][Center];
+        linear[OriginUpLeft   ] = p.points[Up][Left];
+        linear[OriginDownLeft ] = p.points[Down][Left];
+        linear[OriginDownRight] = p.points[Down][Right];
+        linear[OriginUpRight  ] = p.points[Up][Right];
+
+        PillowGraphy p1 =
+            {
+                {
+                 {linear[OriginUpLeft], linear[BUpLeft]     , linear[OriginUp]    },
+                 {linear[BLeftUp]     , linear[CenterUpLeft], linear[JoinUp]      },
+                 {linear[OriginLeft]  , linear[JoinLeft]    , linear[OriginCenter]},
+                 },
+                {
+                 {0, 0, 0},
+                 {0, 0, 0},
+                 {0, 0, 0},
+                },
+                {
+                    {0, 0, 0},
+                    {0, 0, 0},
+                    {0, 0, 0},
+                },
+                p.r, p.g, p.b,
+                0.0, 0.0
+            };
+
+        PillowGraphy p2 =
+            {
+                {
+                 {linear[OriginLeft]    , linear[JoinLeft]      , linear[OriginCenter]},
+                 {linear[BDownLeft]     , linear[CenterDownLeft], linear[JoinDown]    },
+                 {linear[OriginDownLeft], linear[BLeftDown]     , linear[OriginDown]  },
+                 },
+                {
+                    {0, 0, 0},
+                    {0, 0, 0},
+                    {0, 0, 0},
+                 },
+                {
+                    {0, 0, 0},
+                    {0, 0, 0},
+                    {0, 0, 0},
+                 },
+                p.r, p.g, p.b,
+                0.0, 0.0
+            };
+
+        PillowGraphy p3 =
+            {
+                {
+                 {linear[OriginCenter], linear[JoinRight]      , linear[OriginRight]    },
+                 {linear[JoinDown]    , linear[CenterDownRight], linear[BRightDown]     },
+                 {linear[OriginDown]  , linear[BDownRight]     , linear[OriginDownRight]},
+                 },
+                {
+                    {0, 0, 0},
+                    {0, 0, 0},
+                    {0, 0, 0},
+                 },
+                {
+                    {0, 0, 0},
+                    {0, 0, 0},
+                    {0, 0, 0},
+                 },
+                p.r, p.g, p.b,
+                0.0, 0.0
+            };
+
+        PillowGraphy p4 =
+            {
+                {
+                 {linear[OriginUp]    , linear[BUpRight]     , linear[OriginUpRight]},
+                 {linear[JoinUp]      , linear[CenterUpRight], linear[BRightUp]     },
+                 {linear[OriginCenter], linear[JoinRight]    , linear[OriginRight]  },
+                 },
+                {
+                    {0, 0, 0},
+                    {0, 0, 0},
+                    {0, 0, 0},
+                 },
+                {
+                    {0, 0, 0},
+                    {0, 0, 0},
+                    {0, 0, 0},
+                 },
+                p.r, p.g, p.b,
+                0.0, 0.0
+            };
+
+        calcPillowFdfRec(p1, sub - 1, id, level, show_border, active);
+        calcPillowFdfRec(p2, sub - 1, id, level, show_border, active);
+        calcPillowFdfRec(p3, sub - 1, id, level, show_border, active);
+        calcPillowFdfRec(p4, sub - 1, id, level, show_border, active);
+    }
+}
+
+
+void GLWidget::calcPillow(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active)
+{
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glNewList(glListIndexPicture, GL_COMPILE);
+    glBegin( GL_QUADS );
+    calcPillowRec(p, sub, id, level, show_border, active);
+    glEnd();
+    glEndList();
+}
+
+void GLWidget::calcPillowRec(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active)
+{
+    if (sub == 1)
+    {
+        calcQuadRec(pillow2Quad(0, 0, p), quadLevel, id, level, show_border, active);
+        calcQuadRec(pillow2Quad(0, 1, p), quadLevel, id, level, show_border, active);
+        calcQuadRec(pillow2Quad(1, 0, p), quadLevel, id, level, show_border, active);
+        calcQuadRec(pillow2Quad(1, 1, p), quadLevel, id, level, show_border, active);
     }
     else
     {
@@ -398,9 +564,9 @@ void GLWidget::drawPillow(PillowGraphy p, int sub, GLuint id, float level, int s
                 0.0, 0.0
             };
 
-        drawPillow(p1, sub - 1, id, level, show_border, active);
-        drawPillow(p2, sub - 1, id, level, show_border, active);
-        drawPillow(p3, sub - 1, id, level, show_border, active);
-        drawPillow(p4, sub - 1, id, level, show_border, active);
+        calcPillowRec(p1, sub - 1, id, level, show_border, active);
+        calcPillowRec(p2, sub - 1, id, level, show_border, active);
+        calcPillowRec(p3, sub - 1, id, level, show_border, active);
+        calcPillowRec(p4, sub - 1, id, level, show_border, active);
     }
 }
