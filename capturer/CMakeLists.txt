@@ -9,7 +9,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(PROJECT_SOURCES
         src/Capturer.cpp
-        src/input.cpp      include/input.hpp
 )
 add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCES}
@@ -18,7 +17,7 @@ add_executable(${PROJECT_NAME}
 if (WIN32)
     set(CAPTURER_DEPS opengl32 glu32 d3d9 d3dx9 dxgi)
 else()
-    set(CAPTURER_DEPS GL GLU X11 Xext Xrandr)
+    set(CAPTURER_DEPS)
 endif(WIN32)
 
 target_link_libraries(${PROJECT_NAME} ${CAPTURER_DEPS} argus)
