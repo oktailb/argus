@@ -57,10 +57,15 @@ jobs:
       run: |
         sudo apt-get -y install libmicrohttpd-dev
 
-    - name: Install microhttpd dependencies
+    - name: Install xtst dependencies
       if: runner.os == 'Linux'
       run: |
         sudo apt-get -y install libxtst-dev
+
+    - name: Install xrandr dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get -y install libxrandr-dev
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
