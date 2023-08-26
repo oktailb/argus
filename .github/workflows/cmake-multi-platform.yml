@@ -47,10 +47,15 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install system dependencies
+    - name: Install glew dependencies
       if: runner.os == 'Linux'
       run: |
         sudo apt-get -y install libglew-dev
+
+    - name: Install microhttpd dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get -y install libmicrohttpd-dev
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
