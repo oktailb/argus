@@ -336,6 +336,38 @@ bool input::captureSingleWindow(char * buffer, int& width, int& height) {
     return true;
 }
 #elif __linux__
+static bool XShmHaveFail = false;
+
+int handlerXorgException(Display * d, XErrorEvent *e)
+{
+    if (    e->error_code   == 8
+        &&  e->minor_code   == 4
+        &&  e->request_code == 130
+        )
+    {
+        XShmHaveFail = true;
+    }
+    else if (    e->error_code   == 9
+             &&  e->minor_code   == 0
+             &&  e->request_code == 73
+             )
+    {
+        std::cerr << "Source window killed, exiting" << std::endl;
+        exit(0);
+    }
+    else
+    {
+        std::cerr << "Xorg exception catched" << std::endl;
+        std::cerr << "Type         :" << e->type << std::endl;
+        std::cerr << "Serial       :" << e->serial << std::endl;
+        std::cerr << "Error Code   :" << (unsigned int) e->error_code << std::endl;
+        std::cerr << "Minor Code   :" << (unsigned int) e->minor_code << std::endl;
+        std::cerr << "Resource ID  :" << e->resourceid << std::endl;
+        std::cerr << "Request Code :" << (unsigned int) e->request_code << std::endl;
+    }
+    return 0;
+}
+
 void GetOpenWindows(std::map<std::string, Window*> & windowList)
 {
     return;
@@ -343,6 +375,8 @@ void GetOpenWindows(std::map<std::string, Window*> & windowList)
 
 bool input::initXSHM()
 {
+    XSetErrorHandler(handlerXorgException);
+
     ximg = XShmCreateImage(display,
                                     DefaultVisualOfScreen(attributes.screen),
                                     DefaultDepthOfScreen(attributes.screen),
@@ -362,7 +396,9 @@ bool input::initXSHM()
 
 bool input::captureXSHM()
 {
-    XShmGetImage(display, root, ximg, 0, 0, 0x00ffffff);
+    XShmGetImage(display, root, ximg, 0, 0, 0xffffffff);
+    if (XShmHaveFail)
+        XGetSubImage(display, root, 0, 0, width, height, AllPlanes, ZPixmap, ximg, 0, 0);
     return true;
 }
 
