@@ -17,6 +17,7 @@
 #include <X11/extensions/XShm.h>
 #include <X11/Xlib.h>
 #include <GL/glx.h>
+#include "input.hpp"
 #endif
 
 #include "types.h"
@@ -228,6 +229,9 @@ public:
     void drawQuad(double coords[4][2], double textures[4][2], int level = 1);
 
     void resizeGL(int width, int height);
+#ifdef __linux__
+    input *getCapturer() const;
+#endif
 
 private:
     std::map<std::string, std::string> configuration;
@@ -242,6 +246,7 @@ private:
     LPVOID shm;
 #elif __linux__
     void * shm;
+    input * capturer;
 #endif
     GLdouble width;
     GLdouble height;

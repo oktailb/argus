@@ -20,7 +20,7 @@ set(PROJECT_SOURCES
     src/configuration.cpp       include/configuration.h
     src/webServer.cpp           include/webServer.h
     src/webRenderer.cpp         include/webRenderer.h
-
+    src/input.cpp               include/input.hpp
 )
 
 add_library(${PROJECT_NAME}
@@ -29,7 +29,7 @@ add_library(${PROJECT_NAME}
 if (WIN32)
     set(ARGUS_DEPS opengl32 glu32 d3d9 d3dx9 dxgi)
 else()
-    set(ARGUS_DEPS GL GLU)
+    set(ARGUS_DEPS GL GLU X11 Xext Xrandr)
 endif(WIN32)
 target_link_libraries(${PROJECT_NAME} ${ARGUS_DEPS})
 include_directories(${CMAKE_SOURCE_DIR}/include include)

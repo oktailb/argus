@@ -132,20 +132,21 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 #include <X11/Xutil.h>
 #include <X11/Xos.h>
 #include <sys/shm.h>
+#include "input.hpp"
+#include "configuration.h"
 
-t_argusExchange* header = nullptr;
+input* capturer;
 
 void updateImageFromSharedMemory(Display* display, Window window) {
-    XImage* image = XCreateImage(display, DefaultVisual(display, DefaultScreen(display)), 32, ZPixmap, 0, (char*)header + sizeof(t_argusExchange), header->width, header->height, 32, 0);
-    XPutImage(display, window, DefaultGC(display, DefaultScreen(display)), image, 0, 0, 0, 0, header->width, header->height);
-    XDestroyImage(image);
+    capturer->shoot();
+    XPutImage(display, window, DefaultGC(display, DefaultScreen(display)), capturer->getXimg(), 0, 0, 0, 0, capturer->width, capturer->height);
+//    XDestroyImage(capturer->getXimg());
 }
 
 int main() {
     std::string out0 = "prefix Argus SharedMemory";
 
-    void* shm = getSHM(out0.c_str(), header->size + sizeof(*header));
-    header = (t_argusExchange*)shm;
+    std::map<std::string, std::string> configuration = readConfiguration("config.ini");
 
     Display* display = XOpenDisplay(nullptr);
     if (!display) {
@@ -153,20 +154,21 @@ int main() {
         return 1;
     }
 
-    Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0, header->width, header->height, 0, BlackPixel(display, DefaultScreen(display)), WhitePixel(display, DefaultScreen(display)));
+    capturer = new input(configuration);
+    Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0, capturer->width, capturer->height, 0, BlackPixel(display, DefaultScreen(display)), WhitePixel(display, DefaultScreen(display)));
+
+    std::string title = configuration["General/title"] + " copy";
+    XStoreName(display, window, title.c_str());
 
     XSelectInput(display, window, ExposureMask);
     XMapWindow(display, window);
 
     XEvent event;
-    while (true) {
-        XNextEvent(display, &event);
-        if (event.type == Expose) {
-            updateImageFromSharedMemory(display, window);
-        }
-    }
 
-    shmdt(header);
+    while (true)
+        updateImageFromSharedMemory(display, window);
+
+    delete capturer;
     XCloseDisplay(display);
 
     return 0;

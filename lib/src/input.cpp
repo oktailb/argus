@@ -2,7 +2,6 @@
 #include "shm.h"
 #include "configuration.h"
 #include "types.h"
-#include <types.hpp>
 #include <iostream>
 #include <stdio.h>
 #include <unistd.h>
@@ -144,7 +143,7 @@ bool input::initGDI(HWND hWndToCapture)
 
     bi.biSize = sizeof(BITMAPINFOHEADER);
     bi.biWidth = width;
-    bi.biHeight = -height; // Image est stockée à l'envers, donc la hauteur est négative
+    bi.biHeight = -height; // Image est stockï¿½e ï¿½ l'envers, donc la hauteur est nï¿½gative
     bi.biPlanes = 1;
     bi.biBitCount = 32;
     bi.biCompression = BI_RGB;
@@ -289,7 +288,7 @@ input::input(std::map<std::string, std::string> &configuration)
 
     std::string out0 = configuration["General/Prefix"] + " Argus SharedMemory";
 
-    const int SHM_SIZE = width*height*4 + sizeof(*header); // Taille de la mémoire partagée
+    const int SHM_SIZE = width*height*4 + sizeof(*header); // Taille de la mï¿½moire partagï¿½e
 
     region = createSHM(out0.c_str(), SHM_SIZE);
     header = (t_argusExchange*)region;
@@ -342,15 +341,8 @@ void GetOpenWindows(std::map<std::string, Window*> & windowList)
     return;
 }
 
-bool input::initXSHM(Window hWndToCapture)
+bool input::initXSHM()
 {
-    //attributes = {0};
-    XGetWindowAttributes(display, root, &attributes);
-    if (width == 0)
-        width = attributes.width;
-    if (height == 0)
-        height = attributes.height;
-
     ximg = XShmCreateImage(display,
                                     DefaultVisualOfScreen(attributes.screen),
                                     DefaultDepthOfScreen(attributes.screen),
@@ -358,17 +350,17 @@ bool input::initXSHM(Window hWndToCapture)
                                     &shminfo,
                                     width, height);
 
-    shminfo.shmid = shmget(IPC_PRIVATE, ximg->bytes_per_line * ximg->height, IPC_CREAT|0777);
+    shminfo.shmid = shmget(IPC_PRIVATE, ximg->bytes_per_line * ximg->height, IPC_CREAT|IPC_EXCL|0777);
     shminfo.shmaddr = ximg->data = (char*)shmat(shminfo.shmid, 0, 0);
     shminfo.readOnly = False;
     if(shminfo.shmid < 0)
-        puts("Fatal shminfo error!");;
+        std::cerr << "Fatal shminfo error!" << std::endl;
     Status s1 = XShmAttach(display, &shminfo);
-    printf("XShmAttach() %s\n", s1 ? "success!" : "failure!");
+    std::cerr << "XShmAttach() " <<  (s1 ? "success!" : "failure!") << std::endl;;
     return true;
 }
 
-bool input::captureXSHM(char * buffer)
+bool input::captureXSHM()
 {
     XShmGetImage(display, root, ximg, 0, 0, 0x00ffffff);
     return true;
@@ -379,7 +371,7 @@ void input::cleanupXSHM()
     XCloseDisplay(display);
 }
 
-void testAlternative()
+void input::testAlternative()
 {
     Display *disp;
     XRRScreenResources *context;
@@ -402,8 +394,6 @@ void testAlternative()
                 --icrtc;
 
                 crtc_info = XRRGetCrtcInfo (disp, context, context->crtcs[icrtc]);
-                fprintf(stderr, "==> coord : %dx%d size: %dx%d\n", crtc_info->x, crtc_info->y, crtc_info->width, crtc_info->height);
-
                 XRRFreeCrtcInfo(crtc_info);
             }
         }
@@ -413,7 +403,7 @@ void testAlternative()
 }
 
 
-char *getWindowName (Display *disp, Window win)
+char *input::getWindowName (Display *disp, Window win)
 {
     Atom prop = XInternAtom(disp,"WM_NAME",False), type;
     int form;
@@ -431,7 +421,7 @@ char *getWindowName (Display *disp, Window win)
     return (char*)list;
 }
 
-Window *getWindowList (Display *disp, unsigned long *len)
+Window *input::getWindowList (Display *disp, unsigned long *len)
 {
     Atom prop = XInternAtom(disp,"_NET_CLIENT_LIST",False), type;
     int form;
@@ -447,7 +437,7 @@ Window *getWindowList (Display *disp, unsigned long *len)
     return (Window*)list;
 }
 
-void listWindows(Display *disp)
+void input::listWindows(Display *disp, std::map<std::string, Window> &listOut)
 {
     int i;
     unsigned long len;
@@ -459,13 +449,15 @@ void listWindows(Display *disp)
     {
         name = getWindowName(disp,list[i]);
         XWindowAttributes attributes = {0};
+        std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
         XGetWindowAttributes(disp, list[i], &attributes);
-        printf("\t%d :  %s %dx%d\n",i,name, attributes.width, attributes.height);
+        std::cerr << __FILE__ << ":" << __LINE__ << std::endl;
+        listOut[name] = windowFromNameSearch(disp, XDefaultRootWindow(disp), name);
         free(name);
     }
 }
 
-void listDisplay()
+void input::listDisplay(std::map<std::string, Window> &listOut)
 {
     DIR* d = opendir("/tmp/.X11-unix");
 
@@ -482,13 +474,7 @@ void listDisplay()
             Display *disp = XOpenDisplay(display_name);
             if (disp != NULL)
             {
-                int count = XScreenCount(disp);
-                printf("Display %s has %d screens\n", display_name, count);
-                int i;
-                for (i=0; i<count; i++)
-                    printf("%s : %dx%d\n", XDisplayString(disp), XDisplayWidth(disp, i), XDisplayHeight(disp, i));
-                printf("Display %s the following windows:\n", display_name);
-                listWindows(disp);
+                listWindows(disp, listOut);
                 XCloseDisplay(disp);
             }
         }
@@ -498,7 +484,7 @@ void listDisplay()
 }
 
 
-Window windowFromNameSearch(Display *display, Window current, char const *needle)
+Window input::windowFromNameSearch(Display *display, Window current, char const *needle)
 {
     Window retval, root, parent, *children;
     unsigned children_count;
@@ -541,7 +527,7 @@ Window windowFromNameSearch(Display *display, Window current, char const *needle
 
 
 
-Window windowFromPidSearch(Display *display, Window current, unsigned long  _pid)
+Window input::windowFromPidSearch(Display *display, Window current, unsigned long  _pid)
 {
     // Get the PID for the current Window.
     Atom            type;
@@ -597,19 +583,45 @@ Window windowFromPidSearch(Display *display, Window current, unsigned long  _pid
     return retval;
 }
 
-void input::configureWindow()
+void input::configure()
 {
+    std::map<std::string, Window> list;
     display = XOpenDisplay(":0");
     if (display == NULL)
     {
-        listDisplay();
+        listDisplay(list);
         exit(EXIT_FAILURE);
     }
     root = windowFromNameSearch(display, XDefaultRootWindow(display), title.c_str());
     if (root == 0)
     {
-        printf("Impossible to open '%s' window\n", title.c_str());
-        listDisplay();
+        std::cerr << "Impossible to open '" << title << "' window" << std::endl;
+        listDisplay(list);
+        int i = 0;
+        for (auto it = list.begin() ; it != list.end() ; it++)
+            cerr << i++ << ") " << it->first << endl;
+        std::cerr << "wich one ? ";
+        int answer = 0;
+        cin >> answer;
+        auto it = list.begin();
+        for (i = 0; i < list.size() ; i++)
+        {
+            if (i == answer)
+            {
+//                root = it->second;
+                title = it->first;
+                configuration["General/title"] = it->first;
+                std::cerr << title << " Selected." << std::endl;
+                saveConfiguration(configuration, "config.ini");
+                break;
+            }
+            it++;
+        }
+        root = windowFromNameSearch(display, XDefaultRootWindow(display), title.c_str());
+    }
+    if (root == 0)
+    {
+        std::cerr << "cannot handle " << title << std::endl;
         exit(EXIT_FAILURE);
     }
     //attributes = {0};
@@ -618,6 +630,10 @@ void input::configureWindow()
     height = attributes.height;
 }
 
+XImage *input::getXimg() const
+{
+    return ximg;
+}
 
 input::input(std::map<std::string, std::string> &configuration)
     :
@@ -628,22 +644,17 @@ input::input(std::map<std::string, std::string> &configuration)
     title = configuration["General/title"];
     std::string method = configuration["General/method"];
     full = (title.compare("full") == 0);
+#ifdef WIN32
     directX = (method.compare("directx") == 0);
     gdi = (method.compare("gdi") == 0);
+#endif
 
-    configureWindow();
+    configure();
 
-    if (full)
-    {
-    }
-    else
-    {
-        initXSHM(root);
-    }
-
+#if WIN32
     std::string out0 = configuration["General/Prefix"] + " Argus SharedMemory";
 
-    const int SHM_SIZE = width*height*4 + sizeof(*header); // Taille de la mémoire partagée
+    const int SHM_SIZE = width*height*4 + sizeof(*header); // Taille de la mï¿½moire partagï¿½e
 
     region = createSHM(out0.c_str(), SHM_SIZE);
     header = (t_argusExchange*)region;
@@ -651,6 +662,10 @@ input::input(std::map<std::string, std::string> &configuration)
     header->height = height;
     header->size = SHM_SIZE;
     header->inWrite = false;
+#elif __linux__
+    initXSHM();
+#endif
+
 }
 
 input::~input()
@@ -658,30 +673,37 @@ input::~input()
     cleanupXSHM();
 }
 
+
 void input::shoot()
 {
     auto begin = std::chrono::high_resolution_clock::now();
-    header->inWrite = true;
-    if (full)
-        captureFullScreen((char*)region + sizeof(*header), width, height);
-    else
-        captureSingleWindow((char*)region + sizeof(*header), width, height);
-    header->inWrite = false;
+    captureXSHM();
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
-    if (duration.count() < 1000/60)
+    if (duration.count() < 1000.0/60.0)
     {
-        usleep(1000000/60 - duration.count());
+        usleep(1000000.0/60.0 - duration.count());
     }
 }
 
 bool input::captureFullScreen(char * buffer, int& width, int& height)
 {
+    captureXSHM();
     return true;
 }
 
 bool input::captureSingleWindow(char * buffer, int& width, int& height) {
-    captureXSHM(buffer);
+    captureXSHM();
     return true;
 }
 #endif
+
+int input::getWidth() const
+{
+    return width;
+}
+
+int input::getHeight() const
+{
+    return height;
+}

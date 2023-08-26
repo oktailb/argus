@@ -24,6 +24,7 @@ public:
     void resizeGL(int width, int height) {glWidget->resizeGL(width, height);}
     void paintGL() {glWidget->paintGL();}
 private:
+    std::map<std::string, std::string> configuration;
     int         fps;
     double      delayMs;
 
@@ -53,6 +54,7 @@ private:
     Window window = 0;
     XEvent event = {};
     GLXContext context = nullptr;
+    void eventLoop();
 #endif
     void createGLWindow(const char * title, bool fullscreen);
 

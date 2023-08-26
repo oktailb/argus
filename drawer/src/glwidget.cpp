@@ -1,6 +1,5 @@
 #include "GL/glew.h"
 #include "glwidget.h"
-#include "types.hpp"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -14,6 +13,10 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
 {
 #ifdef WIN32
     virtualDesktop = (configuration["General/virtualDesktop"] == "true");
+#elif __linux__
+    capturer = new input(configuration);
+    width = capturer->getWidth();
+    height = capturer->getHeight();
 #endif
     videoSync = (configuration["General/videoSync"] == "true");
     fps = (stoi(configuration["General/fps"]));
@@ -57,9 +60,12 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
     GLfloat g  = std::stod(configuration["Color/g"]);
     GLfloat b  = std::stod(configuration["Color/b"]);
 
+#ifdef WIN32
     header = (t_argusExchange*) getSHM(out0.c_str(), sizeof(*header));
     width = header->width;
     height = header->height;
+#endif
+
     windowWidth = width;
     windowHeight = height;
 
@@ -108,31 +114,31 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
 
     crossSize = 42;
 
+#ifdef WIN32
     int size = header->size + sizeof(*header);
     shm = (t_argusExchange *)getSHM(out0.c_str(), size);
+#endif
     calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
 }
 
 GLWidget::~GLWidget()
 {
+    delete capturer;
 }
 
 #define GLERR {GLenum error = glGetError(); \
 if (error != GL_NO_ERROR) { \
     std::cerr << "OpenGL error: " << error << " in file " << __FILE__ << " on line " << __LINE__ << ": "  << std::endl; \
 } \
-else \
-    std::cerr << "No error "  << __FILE__ << " on line " << __LINE__ << ": " << std::endl; \
-}\
+} \
+
 
 void GLWidget::initializeGL()
 {
     glewInit();
-    //initializeOpenGLFunctions();
-    // Activation des fonctionnalités OpenGL nécessaires pour le rendu 2D et les textures
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, width, 0, height, -10.0, 10.0); // Projection orthographique 2D
+    glOrtho(0, width, 0, height, -10.0, 10.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
@@ -157,18 +163,23 @@ void GLWidget::initializeGL()
 
 void GLWidget::updateTextureFromSharedMemory() {
     glBindTexture(GL_TEXTURE_2D, texture);
+#ifdef WIN32
     header = (t_argusExchange *)shm;
     width = header->width;
     height = header->height;
     while (header->inWrite);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (unsigned char*)shm + sizeof(*header));
-    //GLERR;
+#elif __linux__
+    capturer->captureXSHM();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, capturer->getXimg()->data);
+#endif
+    GLERR;
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void GLWidget::paintGL()
@@ -195,6 +206,13 @@ void GLWidget::resizeGL(int width, int height)
     calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
+
+#ifdef __linux__
+input *GLWidget::getCapturer() const
+{
+    return capturer;
+}
+#endif
 
 void GLWidget::setStep(int newStep)
 {

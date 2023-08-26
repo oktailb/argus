@@ -11,6 +11,10 @@
 
 #include "shm.h"
 
+#ifdef __linux__
+#include "input.hpp"
+#endif
+
 #ifdef WIN32
 #include <windows.h>
 #include <windowsx.h>
@@ -209,13 +213,6 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
         return;
     }
 
-    t_argusExchange* header;
-    std::string out0 = "prefix Argus SharedMemory";
-    void* shm = getSHM(out0.c_str(), sizeof(*header));
-    header = (t_argusExchange*)shm;
-    width = header->width;
-    height = header->height;
-
     GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
     XVisualInfo* vi = glXChooseVisual(display, DefaultScreen(display), att);
 
@@ -235,7 +232,7 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
 
     XStoreName(display, window, title);
     XMapWindow(display, window);
-    XIfEvent(display, &event, WaitForNotify, reinterpret_cast<XPointer>(&window));
+    //XIfEvent(display, &event, WaitForNotify, reinterpret_cast<XPointer>(&window));
 
     context = glXCreateContext(display, vi, nullptr, GL_TRUE);
     glXMakeCurrent(display, window, context);
@@ -243,26 +240,98 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
     ready = true;
 }
 
-
 ArgusWindow::ArgusWindow(std::map<std::string, std::string> configuration)
+    :
+    configuration(configuration)
 {
     shiftPressed = false;
     ctrlPressed = false;
     inMove = false;
     fullscreen = (configuration["General/virtualDesktop"].compare("true") == 0);
     glWidget = new GLWidget(configuration);
+#ifdef __linux__
+    width = glWidget->getCapturer()->getWidth();
+    height = glWidget->getCapturer()->getHeight();
+#endif
     fps = std::stoi(configuration["General/fps"]);
     delayMs = 1000.0f / fps;
     videoSync = (configuration["General/videoSync"].compare("true") == 0);
+}
 
+void ArgusWindow::eventLoop()
+{
+#ifdef WIN32
+    MSG msg = {};
+    if (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE)) {
+        if (msg.message == WM_QUIT)
+            break;
+
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+#elif __linux__
+    if (XPending(display))
+    {
+        XNextEvent(display, &event);
+        switch (event.type)
+        {
+            //                if (ready) resizeGL(newWidth, newHeight);
+
+        case KeyPress:
+        {
+            KeySym key = XLookupKeysym(&event.xkey, 0);
+            keyPressEvent(key);
+            break;
+        }
+
+        case KeyRelease:
+        {
+            KeySym key = XLookupKeysym(&event.xkey, 0);
+            keyReleaseEvent(key);
+            break;
+        }
+
+        case ButtonPress:
+        {
+            int x = event.xbutton.x;
+            int y = event.xbutton.y;
+            if (event.xbutton.button == Button1)
+            {
+                mousePressEvent(1, x, y);
+            }
+            break;
+        }
+
+        case ButtonRelease:
+        {
+            int x = event.xbutton.x;
+            int y = event.xbutton.y;
+            if (event.xbutton.button == Button1)
+            {
+                mouseReleaseEvent(1, x, y);
+            }
+            break;
+        }
+
+        case MotionNotify:
+        {
+            int x = event.xmotion.x;
+            int y = event.xmotion.y;
+            mouseMoveEvent(x, y);
+            break;
+        }
+
+        default:
+            break;
+        }
+    }
+#endif
 }
 
 void ArgusWindow::exec()
 {
     createGLWindow("Argus", true);
-    //    UpdateWindow(hWnd);
     glWidget->initializeGL();
-
 
     auto start = std::chrono::high_resolution_clock::now();
     int counter = 0;
@@ -270,77 +339,13 @@ void ArgusWindow::exec()
     while (true) {
         auto begin = std::chrono::high_resolution_clock::now();
 
-#ifdef WIN32
-        MSG msg = {};
-        if (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE)) {
-            if (msg.message == WM_QUIT)
-                break;
-
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-#elif __linux__
-        if (XPending(display))
-        {
-            XNextEvent(display, &event);
-            switch (event.type)
-            {
-//                if (ready) resizeGL(newWidth, newHeight);
-
-            case KeyPress:
-            {
-                KeySym key = XLookupKeysym(&event.xkey, 0);
-                keyPressEvent(key);
-                break;
-            }
-
-            case KeyRelease:
-            {
-                KeySym key = XLookupKeysym(&event.xkey, 0);
-                keyReleaseEvent(key);
-                break;
-            }
-
-            case ButtonPress:
-            {
-                int x = event.xbutton.x;
-                int y = event.xbutton.y;
-                if (event.xbutton.button == Button1)
-                {
-                    mousePressEvent(1, x, y);
-                }
-                break;
-            }
-
-            case ButtonRelease:
-            {
-                int x = event.xbutton.x;
-                int y = event.xbutton.y;
-                if (event.xbutton.button == Button1)
-                {
-                    mouseReleaseEvent(1, x, y);
-                }
-                break;
-            }
-
-            case MotionNotify:
-            {
-                int x = event.xmotion.x;
-                int y = event.xmotion.y;
-                mouseMoveEvent(x, y);
-                break;
-            }
-
-            default:
-                break;
-            }
-        }
-
-#endif
+        eventLoop();
         paintGL();
 
 #ifdef WIN32
         SwapBuffers(hDC);
+#elif __linux__
+        glXSwapBuffers(display, window);
 #endif
 
         if (videoSync)

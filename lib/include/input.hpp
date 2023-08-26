@@ -17,9 +17,10 @@
 #include <X11/extensions/XTest.h>
 #include <X11/keysym.h>
 #include <X11/extensions/XShm.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #endif
 #include <iostream>
-#include <types.hpp>
 #include <vector>
 #include <map>
 #include <string>
@@ -37,16 +38,16 @@ public:
 	int													height;
     std::string											title;
 	bool												full;
-    bool                                                directX;
-    bool                                                gdi;
 
     bool                                                captureSingleWindow(char * buffer, int& width, int& height);
     bool                                                captureFullScreen(char * buffer, int& width, int& height);
 
 	void												shoot();
-    void                                                configureWindow();
+    void                                                configure();
 
 #ifdef WIN32
+    bool                                                directX;
+    bool                                                gdi;
     HDC													hScrDC;
     HWND												hWindow;
     LPVOID                                              region;
@@ -82,9 +83,20 @@ public:
     XWindowAttributes   attributes;
     XShmSegmentInfo     shminfo;
     XImage *            ximg;
-    bool initXSHM(Window hWndToCapture);
-    bool captureXSHM(char *buffer);
+    bool initXSHM();
+    bool captureXSHM();
     void cleanupXSHM();
+
+    void testAlternative();
+    char *getWindowName (Display *disp, Window win);
+    Window *getWindowList (Display *disp, unsigned long *len);
+    void listWindows(Display *disp, std::map<std::string, Window> &listOut);
+    void listDisplay(std::map<std::string, Window> &listOut);
+    Window windowFromNameSearch(Display *display, Window current, char const *needle);
+    Window windowFromPidSearch(Display *display, Window current, unsigned long  _pid);
 #endif
     t_argusExchange     *header;
+    XImage *getXimg() const;
+    int getWidth() const;
+    int getHeight() const;
 };
