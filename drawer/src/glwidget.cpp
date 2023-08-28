@@ -114,6 +114,9 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
 
     crossSize = 42;
 
+    glListIndexPicture = glGenLists (1);
+    glListIndexGrid = glGenLists (1);
+
 #ifdef WIN32
     int size = header->size + sizeof(*header);
     shm = (t_argusExchange *)getSHM(out0.c_str(), size);
@@ -160,17 +163,19 @@ void GLWidget::initializeGL()
     clearColorA = 1.0f;
     glClearColor(clearColorR, clearColorG, clearColorB, clearColorA);
 
-    updateTextureFromSharedMemory();
+    char * data = (char*)((char*)shm + sizeof(*header));
+
+    updateTextureFromSharedMemory(data);
 }
 
-void GLWidget::updateTextureFromSharedMemory() {
+void GLWidget::updateTextureFromSharedMemory(char *data) {
     glBindTexture(GL_TEXTURE_2D, texture);
 #ifdef WIN32
     header = (t_argusExchange *)shm;
     width = header->width;
     height = header->height;
     while (header->inWrite);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (unsigned char*)shm + sizeof(*header));
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 #elif __linux__
     capturer->shoot();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, capturer->getXimg()->data);
@@ -186,7 +191,10 @@ void GLWidget::updateTextureFromSharedMemory() {
 
 void GLWidget::paintGL()
 {
-    updateTextureFromSharedMemory();
+#ifdef WIN32
+    char * data = (char*)((char*)shm + sizeof(*header));
+    updateTextureFromSharedMemory(data);
+#endif
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glBindTexture(GL_TEXTURE_2D, texture);

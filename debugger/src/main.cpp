@@ -14,118 +14,97 @@
 #ifdef WIN32
 
 #include <windows.h>
-#include <strsafe.h>
 
-HANDLE hMapFile = nullptr;
-t_argusExchange* header = nullptr;
+// Déclarations globales
+int screenWidth = 0;
+int screenHeight = 0;
+int bufferSize = 0; // RGBA
 
-/**
- * @brief updateImageFromSharedMemory
- * @param hdc
- * @param hBitmap
- * @brief Collect the shm picture data and produce am Operating syste display server compatible bitmap
- */
-void updateImageFromSharedMemory(HDC hdc, HBITMAP hBitmap) {
-    BITMAPINFO bmpInfo = {};
-    bmpInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmpInfo.bmiHeader.biWidth = header->width;
-    bmpInfo.bmiHeader.biHeight = -header->height;
-    bmpInfo.bmiHeader.biPlanes = 1;
-    bmpInfo.bmiHeader.biBitCount = 32;
-    bmpInfo.bmiHeader.biCompression = BI_RGB;
+// Pointeur vers le buffer RGBA (vous vous en occupez)
+unsigned char* rgbaBuffer = nullptr;
+bool *inWrite;
 
-    SetDIBitsToDevice(hdc, 0, 0, header->width, header->height, 0, 0, 0, header->height, (BYTE*)header + sizeof(t_argusExchange), &bmpInfo, DIB_RGB_COLORS);
-}
+// Fonction de traitement des messages
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hwnd, &ps);
 
-void ErrorExit(LPTSTR lpszFunction)
-{
-    // Retrieve the system error message for the last-error code
+    // Copie du buffer RGBA vers le contexte de périphérique (DC)
+    if (rgbaBuffer != nullptr) {
+        BITMAPINFOHEADER bi = {};
+        bi.biSize = sizeof(BITMAPINFOHEADER);
+        bi.biWidth = screenWidth;
+        bi.biHeight = screenHeight; // Négatif pour inverser l'orientation
+        bi.biPlanes = 1;
+        bi.biBitCount = 32;
+        bi.biCompression = BI_RGB;
 
-    LPVOID lpMsgBuf;
-    LPVOID lpDisplayBuf;
-    DWORD dw = GetLastError();
+        while (*inWrite)
+            ;
+        SetDIBitsToDevice(hdc, 0, 0, screenWidth, screenHeight, 0, 0, 0, screenHeight, rgbaBuffer - 0x100, (BITMAPINFO*)&bi, DIB_RGB_COLORS); //  - 0x100 ????????????
+    }
 
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER |
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        dw,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &lpMsgBuf,
-        0, NULL );
-
-    // Display the error message and exit the process
-
-    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,
-        (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
-    StringCchPrintf((LPTSTR)lpDisplayBuf,
-        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-        TEXT("%s failed with error %d: %s"),
-        lpszFunction, dw, lpMsgBuf);
-    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
-
-    LocalFree(lpMsgBuf);
-    LocalFree(lpDisplayBuf);
-    ExitProcess(dw);
-}
-
-LRESULT CALLBACK WndProc(HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lParam)
-{
-    switch(Msg)
-    {
-    case WM_DESTROY:
-        PostQuitMessage(WM_QUIT);
+    EndPaint(hwnd, &ps);
+    InvalidateRect(hwnd, NULL, TRUE);
+    switch (uMsg) {
+    case WM_PAINT: {
         break;
+    }
+    case WM_KEYDOWN: {
+        if (wParam == VK_ESCAPE) {
+            PostQuitMessage(0); // Quitter l'application si la touche ESC est pressée
+        }
         break;
+    }
+    case WM_DESTROY: {
+        PostQuitMessage(0);
+        break;
+    }
     default:
-        return DefWindowProc(hwnd, Msg, wParam, lParam);
+        return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
     return 0;
 }
 
-int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
-//int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, wchar_t * lpCmdLine, int nCmdShow)
-{
-    std::string out0 = "prefix Argus SharedMemory";
-
-    LPVOID shm = getSHM(out0.c_str(), sizeof(*header));
-    header = (t_argusExchange*)shm;
-    shm = getSHM(out0.c_str(), header->size + sizeof(*header));
-
-    // Register the window class.
-    const char CLASS_NAME[]  = "OpenGLWindow";
-
-    WNDCLASS wc = { };
-
-    wc.lpfnWndProc   = WndProc;
-    wc.hInstance     = hInstance;
-    wc.lpszClassName = CLASS_NAME;
-
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    // Enregistrement de la classe de la fenêtre
+    const char className[] = "RGBAWindowClass";
+    WNDCLASS wc = {};
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = className;
     RegisterClass(&wc);
 
-    HWND hwnd = CreateWindowEx(0, CLASS_NAME, "Image Viewer", WS_OVERLAPPEDWINDOW,
-                               CW_USEDEFAULT, CW_USEDEFAULT, header->width, header->height, NULL, NULL, GetModuleHandle(NULL), NULL);
-    if (hwnd == NULL) {
-        ErrorExit(TEXT("CreateWindowEx"));
-        std::cerr << "Failed to create window." << std::endl;
-        return 1;
+    t_argusExchange* header;
+    std::string out0 = "prefix Argus SharedMemory";
+    LPVOID shm = getSHM(out0.c_str(), sizeof(*header));
+    header = (t_argusExchange*)shm;
+
+    screenWidth = header->width;
+    screenHeight = header->height;
+    bufferSize = screenWidth * screenHeight * 4; // RGBA
+    shm = getSHM(out0.c_str(), sizeof(*header) + header->size);
+    header = (t_argusExchange*)shm;
+    rgbaBuffer = (unsigned char *) (header + sizeof(*header));
+    inWrite = &header->inWrite;
+    // Création de la fenêtre
+    HWND hwnd = CreateWindowEx(0, className, "Affichage RGBA", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, screenWidth, screenHeight, nullptr, nullptr, hInstance, nullptr);
+    if (hwnd == nullptr) {
+        return 0;
     }
-    ShowWindow(hwnd, nShowCmd);
-    HDC hdc = GetDC(hwnd);
-    HBITMAP hBitmap = CreateCompatibleBitmap(hdc, header->width, header->height);
 
-    while (true) {
-        updateImageFromSharedMemory(hdc, hBitmap);
-        Sleep(10);
+    // Affichage de la fenêtre
+    ShowWindow(hwnd, nCmdShow);
+    UpdateWindow(hwnd);
+
+    // Boucle de messages
+    MSG msg;
+    while (GetMessage(&msg, nullptr, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
 
-    DeleteObject(hBitmap);
-    ReleaseDC(hwnd, hdc);
-    UnmapViewOfFile(header);
-    CloseHandle(hMapFile);
-
-    return 0;
+    return msg.wParam;
 }
 #elif __linux__
 #include <X11/Xlib.h>

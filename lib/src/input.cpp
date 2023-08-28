@@ -143,7 +143,7 @@ bool input::initGDI(HWND hWndToCapture)
 
     bi.biSize = sizeof(BITMAPINFOHEADER);
     bi.biWidth = width;
-    bi.biHeight = -height; // Image est stock�e � l'envers, donc la hauteur est n�gative
+    bi.biHeight = -height;
     bi.biPlanes = 1;
     bi.biBitCount = 32;
     bi.biCompression = BI_RGB;
@@ -181,19 +181,18 @@ bool input::captureGDI(char * buffer)
 
     if(!::GetDIBits(hdcWindow, hBitmap, 0, Bm.bmHeight, buffer, &BitInfo, DIB_RGB_COLORS))
     {
-        return (NULL);
+        return (false);
     }
+//    for (int y = 0; y < height; y++) {
+//        for (int x = 0; x < width; x++) {
+//            char* pixel = buffer + (y * width + x) * 4; // 3 bytes per pixel (RGB)
 
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            char* pixel = buffer + (y * width + x) * 4; // 3 bytes per pixel (RGB)
-
-            // Inverser les canaux R et B
-            unsigned char temp = pixel[0]; // R
-            pixel[0] = pixel[2]; // B
-            pixel[2] = temp; // R
-        }
-    }
+//            // Inverser les canaux R et B
+//            unsigned char temp = pixel[0]; // R
+//            pixel[0] = pixel[2]; // B
+//            pixel[2] = temp; // R
+//        }
+//    }
 
     DeleteObject(hBitmapOld);
     DeleteObject(hBitmap);
@@ -288,13 +287,13 @@ input::input(std::map<std::string, std::string> &configuration)
 
     std::string out0 = configuration["General/Prefix"] + " Argus SharedMemory";
 
-    const int SHM_SIZE = width*height*4 + sizeof(*header); // Taille de la m�moire partag�e
+    const int SHM_SIZE = width*height*4 + sizeof(*header);
 
     region = createSHM(out0.c_str(), SHM_SIZE);
     header = (t_argusExchange*)region;
     header->width = width;
     header->height = height;
-    header->size = SHM_SIZE;
+    header->size = width*height*4;
     header->inWrite = false;
 }
 
