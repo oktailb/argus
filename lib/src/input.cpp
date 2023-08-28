@@ -398,7 +398,10 @@ bool input::captureXSHM()
 {
     XShmGetImage(display, root, ximg, 0, 0, 0xffffffff);
     if (XShmHaveFail)
-        XGetSubImage(display, root, 0, 0, width, height, AllPlanes, ZPixmap, ximg, 0, 0);
+    {
+        std::cerr << "XSHM failed, fallback method" << std::endl;
+        ximg = XGetSubImage(display, root, 0, 0, width, height, AllPlanes, ZPixmap, ximg, 0, 0);
+    }
     return true;
 }
 

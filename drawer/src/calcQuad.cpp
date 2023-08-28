@@ -60,6 +60,7 @@ void		GLWidget::calcQuadRec(t_Quad h, int sub, GLuint id, float level, int show_
     glBindTexture  (GL_TEXTURE_2D, id);
     if (sub == 1)
     {
+        glBegin( GL_QUADS );
         glTexCoord2d    (h.texture[UpLeft].x      , h.texture[UpLeft].y );
         glColor4d       (h.r, h.g, h.b, h.alpha[UpLeft]);
         glVertex3d      (h.points[UpLeft].x       , h.points[UpLeft].y, level);
@@ -72,6 +73,7 @@ void		GLWidget::calcQuadRec(t_Quad h, int sub, GLuint id, float level, int show_
         glTexCoord2d    (h.texture[UpRight].x     , h.texture[UpRight].y );
         glColor4d       (h.r, h.g, h.b, h.alpha[UpRight]);
         glVertex3d      (h.points[UpRight].x      , h.points[UpRight].y, level);
+        glEnd();
     }
     else
     {
@@ -360,9 +362,7 @@ void GLWidget::calcPillow(PillowGraphy p, int sub, GLuint id, float level, int s
     glBindTexture(GL_TEXTURE_2D, texture);
 
     glNewList(glListIndexPicture, GL_COMPILE);
-    glBegin( GL_LINE_LOOP );
     calcPillowRec(p, sub, id, level, show_border, active);
-    glEnd();
     glEndList();
 }
 
