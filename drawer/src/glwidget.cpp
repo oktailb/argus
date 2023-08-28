@@ -123,7 +123,9 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
 
 GLWidget::~GLWidget()
 {
+#ifdef __linux__
     delete capturer;
+#endif
 }
 
 #define GLERR {GLenum error = glGetError(); \

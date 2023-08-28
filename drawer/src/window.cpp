@@ -264,7 +264,7 @@ void ArgusWindow::eventLoop()
     MSG msg = {};
     if (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE)) {
         if (msg.message == WM_QUIT)
-            break;
+            exit(EXIT_SUCCESS);
 
         TranslateMessage(&msg);
         DispatchMessage(&msg);

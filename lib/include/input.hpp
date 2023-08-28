@@ -76,6 +76,8 @@ public:
     bool initDirectX(HWND hWndToCapture);
     bool captureDirectX(char *buffer);
     void cleanupDirectX();
+    void configureWindow();
+
 #elif __linux__
     void*               region;
     Display *           display;
@@ -94,9 +96,9 @@ public:
     void listDisplay(std::map<std::string, Window> &listOut);
     Window windowFromNameSearch(Display *display, Window current, char const *needle);
     Window windowFromPidSearch(Display *display, Window current, unsigned long  _pid);
+    XImage *getXimg() const;
 #endif
     t_argusExchange     *header;
-    XImage *getXimg() const;
     int getWidth() const;
     int getHeight() const;
 };

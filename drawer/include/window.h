@@ -54,8 +54,8 @@ private:
     Window window = 0;
     XEvent event = {};
     GLXContext context = nullptr;
-    void eventLoop();
 #endif
+    void eventLoop();
     void createGLWindow(const char * title, bool fullscreen);
 
 };
