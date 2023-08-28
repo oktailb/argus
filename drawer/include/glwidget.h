@@ -225,7 +225,7 @@ public:
 
     void initializeGL();
     void paintGL();
-    void updateTextureFromSharedMemory();
+    void updateTextureFromSharedMemory(char *data);
     void drawQuad(double coords[4][2], double textures[4][2], int level = 1);
 
     void resizeGL(int width, int height);
