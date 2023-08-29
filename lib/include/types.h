@@ -13,7 +13,7 @@ typedef struct s_argusExchange {
     int width;
     int height;
     int size;
-    bool inWrite;
+    bool firstBufferInWrite;
 } t_argusExchange;
 
 
@@ -135,7 +135,6 @@ typedef struct		s_t_Quad
 
 typedef struct		s_PillowGraphy
 {
-    //t_Quad  quads[4];
     t_Point	points[3][3];
     t_Point	texture[3][3];
     GLfloat	alpha[3][3];

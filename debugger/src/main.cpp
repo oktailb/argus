@@ -22,7 +22,6 @@ int bufferSize = 0; // RGBA
 
 // Pointeur vers le buffer RGBA (vous vous en occupez)
 unsigned char* rgbaBuffer = nullptr;
-bool *inWrite;
 
 // Fonction de traitement des messages
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -39,8 +38,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         bi.biBitCount = 32;
         bi.biCompression = BI_RGB;
 
-        while (*inWrite)
-            ;
         SetDIBitsToDevice(hdc, 0, 0, screenWidth, screenHeight, 0, 0, 0, screenHeight, rgbaBuffer, (BITMAPINFO*)&bi, DIB_RGB_COLORS); //  - 0x100 ????????????
     }
 
@@ -82,10 +79,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     screenWidth = header->width;
     screenHeight = header->height;
-    shm = getSHM(out0.c_str(), sizeof(*header) + header->size);
+    shm = getSHM(out0.c_str(), sizeof(*header) + 2*header->size);
     header = (t_argusExchange*)shm;
-    rgbaBuffer = ((unsigned char *) (header) + sizeof(*header));
-    inWrite = &header->inWrite;
+    if (!header->firstBufferInWrite)
+        rgbaBuffer = ((unsigned char *) (header) + sizeof(*header));
+    else
+        rgbaBuffer = ((unsigned char *) (header) + sizeof(*header) + header->size);
     // Création de la fenêtre
     HWND hwnd = CreateWindowEx(0, className, "Affichage RGBA", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, screenWidth, screenHeight, nullptr, nullptr, hInstance, nullptr);
     if (hwnd == nullptr) {

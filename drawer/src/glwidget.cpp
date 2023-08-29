@@ -112,7 +112,7 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
     crossSize = 42;
 
 #ifdef WIN32
-    int size = header->size + sizeof(*header);
+    int size = 2 * header->size + sizeof(*header);
     shm = (t_argusExchange *)getSHM(out0.c_str(), size);
 #endif
     calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
@@ -161,10 +161,8 @@ void GLWidget::initializeGL()
 void GLWidget::updateTextureFromSharedMemory(char *data) {
     glBindTexture(GL_TEXTURE_2D, texture);
 #ifdef WIN32
-    header = (t_argusExchange *)shm;
     width = header->width;
     height = header->height;
-    while (header->inWrite);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
 #elif __linux__
     capturer->shoot();
@@ -182,7 +180,11 @@ void GLWidget::updateTextureFromSharedMemory(char *data) {
 void GLWidget::paintGL()
 {
 #ifdef WIN32
-    char * data = (char*)((char*)shm + sizeof(*header));
+    char * data;
+    if (!header->firstBufferInWrite)
+        data = (char*)((char*)shm + sizeof(*header));
+    else
+        data = (char*)((char*)shm + sizeof(*header) + header->size);
     updateTextureFromSharedMemory(data);
 #endif
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

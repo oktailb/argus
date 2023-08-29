@@ -287,14 +287,14 @@ input::input(std::map<std::string, std::string> &configuration)
 
     std::string out0 = configuration["General/Prefix"] + " Argus SharedMemory";
 
-    const int SHM_SIZE = width*height*4 + sizeof(*header);
+    const int SHM_SIZE = 2 * (width*height*4) + sizeof(*header);
 
     region = createSHM(out0.c_str(), SHM_SIZE);
     header = (t_argusExchange*)region;
     header->width = width;
     header->height = height;
     header->size = width*height*4;
-    header->inWrite = false;
+    header->firstBufferInWrite = false;
 }
 
 input::~input()
@@ -305,12 +305,22 @@ input::~input()
 
 void input::shoot()
 {
-    header->inWrite = true;
-    if (full)
-        captureFullScreen((char*)region + sizeof(*header), width, height);
+#ifdef WIN32
+    header->firstBufferInWrite = !header->firstBufferInWrite;
+
+    char * buffer;
+    if (header->firstBufferInWrite)
+        buffer = (char*)region + sizeof(*header);
     else
-        captureSingleWindow((char*)region + sizeof(*header), width, height);
-    header->inWrite = false;
+        buffer = (char*)region + sizeof(*header) + header->size;
+
+    if (full)
+        captureFullScreen(buffer, width, height);
+    else
+        captureSingleWindow(buffer, width, height);
+#elif __linux__
+    captureSingleWindow((char*)region + sizeof(*header), width, height);
+#endif
 }
 
 bool input::captureFullScreen(char * buffer, int& width, int& height)
