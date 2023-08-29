@@ -41,7 +41,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
         while (*inWrite)
             ;
-        SetDIBitsToDevice(hdc, 0, 0, screenWidth, screenHeight, 0, 0, 0, screenHeight, rgbaBuffer - 0x100, (BITMAPINFO*)&bi, DIB_RGB_COLORS); //  - 0x100 ????????????
+        SetDIBitsToDevice(hdc, 0, 0, screenWidth, screenHeight, 0, 0, 0, screenHeight, rgbaBuffer, (BITMAPINFO*)&bi, DIB_RGB_COLORS); //  - 0x100 ????????????
     }
 
     EndPaint(hwnd, &ps);
@@ -82,10 +82,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     screenWidth = header->width;
     screenHeight = header->height;
-    bufferSize = screenWidth * screenHeight * 4; // RGBA
     shm = getSHM(out0.c_str(), sizeof(*header) + header->size);
     header = (t_argusExchange*)shm;
-    rgbaBuffer = (unsigned char *) (header + sizeof(*header));
+    rgbaBuffer = ((unsigned char *) (header) + sizeof(*header));
     inWrite = &header->inWrite;
     // Création de la fenêtre
     HWND hwnd = CreateWindowEx(0, className, "Affichage RGBA", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, screenWidth, screenHeight, nullptr, nullptr, hInstance, nullptr);
