@@ -24,7 +24,7 @@ int handlerXorgException(Display * d, XErrorEvent *e)
     if (    e->error_code   == 8
         &&  e->minor_code   == 4
         &&  e->request_code == 130
-        )s
+        )
     {
         XShmHaveFail = true;
     }
