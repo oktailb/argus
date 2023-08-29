@@ -56,31 +56,31 @@ public:
     HWND												hWindow;
     LPVOID                                              region;
     static LRESULT WINAPI								WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-    HWND hWnd;
-    BITMAPINFOHEADER bi;
-    RECT rect;
-    HDC hdcScreen;
-    HDC hdcWindow;
-    HDC hdcMem;
-    HBITMAP hBitmap;
-    HBITMAP hBitmapOld;
-    bool initGDI(HWND hWndToCapture);
-    bool captureGDI(char *buffer);
-    void cleanupGDI();
+    HWND                                                hWnd;
+    BITMAPINFOHEADER                                    bi;
+    RECT                                                rect;
+    HDC                                                 hdcScreen;
+    HDC                                                 hdcWindow;
+    HDC                                                 hdcMem;
+    HBITMAP                                             hBitmap;
+    HBITMAP                                             hBitmapOld;
+    bool                                                initGDI(HWND hWndToCapture);
+    bool                                                captureGDI(char *buffer);
+    void                                                cleanupGDI();
 
-    IDirect3D9*             pD3D;
-    IDirect3DDevice9*       pDevice;
-    IDirect3DSurface9*      pSurface;
-    D3DPRESENT_PARAMETERS   d3dpp;
-    D3DLOCKED_RECT          lockedRect;
+    IDirect3D9*                                         pD3D;
+    IDirect3DDevice9*                                   pDevice;
+    IDirect3DSurface9*                                  pSurface;
+    D3DPRESENT_PARAMETERS                               d3dpp;
+    D3DLOCKED_RECT                                      lockedRect;
 
-    int                     nb_adapters;
-    int                     nb_screens;
+    int                                                 nb_adapters;
+    int                                                 nb_screens;
 
-    bool initDirectX(HWND hWndToCapture);
-    bool captureDirectX(char *buffer);
-    void cleanupDirectX();
-    void configureWindow();
+    bool                                                initDirectX(HWND hWndToCapture);
+    bool                                                captureDirectX(char *buffer);
+    void                                                cleanupDirectX();
+    void                                                configureWindow();
 
 #elif __linux__
     void*               region;

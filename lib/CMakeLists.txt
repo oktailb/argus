@@ -21,6 +21,9 @@ set(PROJECT_SOURCES
     src/webServer.cpp           include/webServer.h
     src/webRenderer.cpp         include/webRenderer.h
     src/input.cpp               include/input.hpp
+    src/inputGDI.cpp
+    src/inputDirectX.cpp
+    src/inputXorg.cpp
 )
 
 add_library(${PROJECT_NAME}
