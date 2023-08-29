@@ -49,12 +49,21 @@ set(PROJECT_SOURCES
         src/glwidget.cpp        include/glwidget.h
         src/window.cpp          include/window.h
         src/drawQuadRec.cpp
-        src/calcQuad.cpp
-        src/draw.cpp
+        src/linearisationMath.cpp
+        src/drawEditMode.cpp
         src/drawCross.cpp
         src/drawQuad.cpp
+        src/calcPillow.cpp
+        src/calcPillow.cpp
+        src/drawPillow.cpp
+        src/drawPillowFdf.cpp
+        src/calcPillowFdf.cpp
+        src/calcPillowFdfRec.cpp
+        src/calcPillowRec.cpp
         src/drawQuadFdf.cpp
-        src/drawQuadFdfRec.cpp
+        src/calcQuadFdf.cpp
+        src/calcQuadFdfRec.cpp
+        src/glWidgetActions.cpp
                                 include/resources.h
 )
 

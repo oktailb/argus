@@ -35,6 +35,4 @@ void GLWidget::drawEditMode(PillowGraphy p, int sub, GLuint id, float level, int
             }
         }
     }
-    //            calcQuad(context);
-    //            calcQuadFdf(context);
 }
