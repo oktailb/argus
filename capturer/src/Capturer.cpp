@@ -123,13 +123,9 @@ int main(int argc, char *argv[])
     if (configuration.find("General/Child") != configuration.end())
     {
         input * capt = new input(configuration);
-        capt->shoot();
 
         SubProcessRunner *subProcessRunner;
-        int fps = std::stoi(configuration["General/fps"]);
-        double delayMs = 1000.0f / fps;
         std::string desktop = "";
-        bool videoSync = (configuration["General/videoSync"].compare("true") == 0);
 #ifdef WIN32
         bool virtualDesktop = (configuration["General/virtualDesktop"].compare("true") == 0);
         if (virtualDesktop)
@@ -141,34 +137,8 @@ int main(int argc, char *argv[])
         subProcessRunner = new SubProcessRunner(configuration["General/Child"], desktop);
         subProcessRunner->runSubProcess();
 
-        auto start = std::chrono::high_resolution_clock::now();
-        int counter = 0;
         while (subProcessRunner->active()) {
-            auto begin = std::chrono::high_resolution_clock::now();
-
             capt->shoot();
-
-            if (videoSync)
-            {
-                auto end = std::chrono::high_resolution_clock::now();
-                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
-                if (duration.count() < delayMs)
-                {
-#ifdef WIN32
-                    Sleep(delayMs - duration.count());
-#elif __linux__
-                    usleep(1000*(delayMs - duration.count()));
-#endif
-
-                }
-            }
-            counter++;
-            if (counter%1000 == 0) {
-                auto step = std::chrono::high_resolution_clock::now();
-                auto lap = std::chrono::duration_cast<std::chrono::milliseconds>(step - start);
-                start = std::chrono::high_resolution_clock::now();
-                std::cerr << "Capture FPS: " << 1000.0f * counter / lap.count()  << std::endl;
-            }
         }
         delete subProcessRunner;
         delete capt;

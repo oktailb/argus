@@ -38,6 +38,10 @@ public:
 	int													height;
     std::string											title;
 	bool												full;
+    int                                                 fps;
+    double                                              delayMs;
+    bool                                                videoSync;
+    bool                                                stats;
 
     bool                                                captureSingleWindow(char * buffer, int& width, int& height);
     bool                                                captureFullScreen(char * buffer, int& width, int& height);

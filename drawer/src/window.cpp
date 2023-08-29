@@ -82,11 +82,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     if (ready) these->paintGL();
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
-#define GLERR {GLenum error = glGetError(); \
-if (error != GL_NO_ERROR) { \
-        std::cerr << "OpenGL error: " << error << " on line " << __LINE__ << ": "  << std::endl; \
-}\
-}
 
 #elif __linux__
 #include <X11/Xlib.h>
@@ -256,6 +251,7 @@ ArgusWindow::ArgusWindow(std::map<std::string, std::string> configuration)
     fps = std::stoi(configuration["General/fps"]);
     delayMs = 1000.0f / fps;
     videoSync = (configuration["General/videoSync"].compare("true") == 0);
+    stats = (configuration["General/stats"].compare("true") == 0);
 }
 
 void ArgusWindow::eventLoop()
@@ -362,10 +358,9 @@ void ArgusWindow::exec()
             }
         }
         counter++;
-        if (counter%1000 == 0) {
+        if (stats && counter%1000 == 0) {
             auto step = std::chrono::high_resolution_clock::now();
             auto lap = std::chrono::duration_cast<std::chrono::milliseconds>(step - start);
-            start = std::chrono::high_resolution_clock::now();
             std::cerr << "Draw FPS: " << 1000.0f * counter / lap.count()  << std::endl;
         }
     }

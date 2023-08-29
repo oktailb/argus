@@ -171,6 +171,7 @@ private:
 #endif
     int                         fps;
     bool                        videoSync;
+    bool                        stats;
     int                         endLoop;
     bool                        editMode;
     int                         recursionLevel;

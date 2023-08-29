@@ -228,6 +228,7 @@ void GLWidget::save(std::string conf)
 #endif
     configuration["General/fps"] = std::to_string(fps);
     configuration["General/videoSync"] = videoSync?"true":"false";
+    configuration["General/stats"] = stats?"true":"false";
 
     saveConfiguration(configuration, "config.ini");
 }

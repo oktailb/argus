@@ -183,16 +183,6 @@ bool input::captureGDI(char * buffer)
     {
         return (false);
     }
-//    for (int y = 0; y < height; y++) {
-//        for (int x = 0; x < width; x++) {
-//            char* pixel = buffer + (y * width + x) * 4; // 3 bytes per pixel (RGB)
-
-//            // Inverser les canaux R et B
-//            unsigned char temp = pixel[0]; // R
-//            pixel[0] = pixel[2]; // B
-//            pixel[2] = temp; // R
-//        }
-//    }
 
     DeleteObject(hBitmapOld);
     DeleteObject(hBitmap);
@@ -253,6 +243,10 @@ input::input(std::map<std::string, std::string> &configuration)
     full = (title.compare("full") == 0);
     directX = (method.compare("directx") == 0);
     gdi = (method.compare("gdi") == 0);
+    fps = std::stoi(configuration["General/fps"]);
+    delayMs = 1000.0f / fps;
+    videoSync = (configuration["General/videoSync"].compare("true") == 0);
+    stats = (configuration["General/stats"].compare("true") == 0);
 
     configureWindow();
 
@@ -305,6 +299,10 @@ input::~input()
 
 void input::shoot()
 {
+    static auto start = std::chrono::high_resolution_clock::now();
+    static int counter = 0;
+    auto begin = std::chrono::high_resolution_clock::now();
+
 #ifdef WIN32
     header->firstBufferInWrite = !header->firstBufferInWrite;
 
@@ -321,6 +319,28 @@ void input::shoot()
 #elif __linux__
     captureSingleWindow((char*)region + sizeof(*header), width, height);
 #endif
+
+    if (videoSync)
+    {
+        auto end = std::chrono::high_resolution_clock::now();
+        auto unusedMs = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() - delayMs;
+        if (unusedMs > 0)
+        {
+#ifdef WIN32
+            Sleep(unusedMs);
+#elif __linux__
+            usleep(1000 * unusedMs);
+#endif
+
+        }
+    }
+    counter++;
+    if (stats && counter%1000 == 0) {
+        auto step = std::chrono::high_resolution_clock::now();
+        auto lap = std::chrono::duration_cast<std::chrono::milliseconds>(step - start);
+        std::cerr << "Capture FPS: " << 1000.0f * counter / lap.count()  << std::endl;
+    }
+
 }
 
 bool input::captureFullScreen(char * buffer, int& width, int& height)

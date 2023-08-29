@@ -34,6 +34,7 @@ private:
     bool        inMove;
     bool        fullscreen;
     bool        videoSync;
+    bool        stats;
     int         width;
     int         height;
     bool        ready;

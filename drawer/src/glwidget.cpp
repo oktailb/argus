@@ -4,8 +4,6 @@
 #include <sstream>
 #include <fstream>
 #include <map>
-
-#include "configuration.h"
 #include "shm.h"
 
 GLWidget::GLWidget(std::map<std::string, std::string> configuration)
@@ -19,6 +17,7 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
     height = capturer->getHeight();
 #endif
     videoSync = (configuration["General/videoSync"] == "true");
+    stats = (configuration["General/stats"] == "true");
     fps = (stoi(configuration["General/fps"]));
 
     prefix = configuration["General/Prefix"];
@@ -156,6 +155,8 @@ void GLWidget::initializeGL()
     glListIndexGrid = glGenLists (1);
 
     updateTextureFromSharedMemory(data);
+    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::updateTextureFromSharedMemory(char *data) {
