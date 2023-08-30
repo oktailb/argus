@@ -4,15 +4,16 @@
 #include <fstream>
 #include <sstream>
 
+#include "webServer.h"
+
 #ifdef WIN32
 #include <windows.h>
-#include "desktop.h"
+//#include "desktop.h"
 #elif __linux__
 #endif
 
 #include "window.h"
 #include "configuration.h"
-#include "webServer.h"
 #include "resources.h"
 
 class cssRenderer : public webRenderer {
@@ -81,5 +82,5 @@ int main(int argc, char *argv[])
 
 //    if (virtualDesktop)
 //        restoreOriginalDesktop();
-
+    return (EXIT_SUCCESS);
 }
