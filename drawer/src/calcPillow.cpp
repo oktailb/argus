@@ -2,7 +2,7 @@
 
 void GLWidget::calcPillow(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active)
 {
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, textureCurrent);
 
     glDeleteLists(glListIndexPicture, 1);
 

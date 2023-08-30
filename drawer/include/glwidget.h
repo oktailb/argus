@@ -77,6 +77,8 @@ public:
 
     bool inEditMode() {return editMode;}
     void toggleEditMode();
+    void enableDebugMode();
+    void enableCaptureMode();
     void increaseAlpha();
     void decreaseAlpha();
     void increaseSmoothLen();
@@ -105,6 +107,7 @@ public:
     void initializeGL();
     void paintGL();
     void updateTextureFromSharedMemory(char *data);
+    void loadHSVTexture();
     void drawQuad(double coords[4][2], double textures[4][2], int level = 1);
 
     void resizeGL(int width, int height);
@@ -119,7 +122,9 @@ private:
     GLdouble clearColorB;
     GLdouble clearColorA;
     t_Point lastPos;
-    unsigned int texture;
+    unsigned int textureCapture;
+    unsigned int textureHSV;
+    unsigned int textureCurrent;
 
 #ifdef WIN32
     LPVOID shm;

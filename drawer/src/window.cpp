@@ -428,7 +428,13 @@ void ArgusWindow::keyReleaseEvent(int key)
 
 void ArgusWindow::keyPressEventASCII(char key)
 {
-    if (key == 'e') {
+    if (key == 'c') {
+        glWidget->enableCaptureMode();
+    }
+    else if (key == 'd') {
+        glWidget->enableDebugMode();
+    }
+    else if (key == 'e') {
         glWidget->toggleEditMode();
     }
     else if (key == 'r') {

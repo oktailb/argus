@@ -18,14 +18,14 @@ void GLWidget::resizeGL(int width, int height)
     windowHeight = height;
     int side = std::min(width, height);
     glViewport((width - side) / 2, (height - side) / 2, side, side);
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::setStep(int newStep)
 {
     step = newStep;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
@@ -33,42 +33,53 @@ void GLWidget::setLastPos(int x, int y)
 {
     lastPos.x = x;
     lastPos.y = y;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::toggleEditMode()
 {
     editMode = !editMode;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
+}
+
+void GLWidget::enableDebugMode()
+{
+    loadHSVTexture();
+    textureCurrent = textureHSV;
+}
+
+void GLWidget::enableCaptureMode()
+{
+    textureCurrent = textureCapture;
 }
 
 void GLWidget::increaseAlpha()
 {
     pillowModel.alpha[selectedPointX][selectedPointY] += 0.01;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::decreaseAlpha()
 {
     pillowModel.alpha[selectedPointX][selectedPointY] -= 0.01;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::increaseSmoothLen()
 {
     smoothLen += 0.01;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::decreaseSmoothLen()
 {
     smoothLen -= 0.01;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
@@ -79,7 +90,7 @@ void GLWidget::increasePillowRecursion()
     recursionLevel++;
     if (recursionLevel >= 16)
         recursionLevel = 15;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
@@ -90,7 +101,7 @@ void GLWidget::decreasePillowRecursion()
     recursionLevel--;
     if (recursionLevel <= 1)
         recursionLevel = 1;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
@@ -101,7 +112,7 @@ void GLWidget::increaseQuadRecursion()
     quadLevel++;
     if (quadLevel >= 16)
         quadLevel = 15;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
@@ -112,7 +123,7 @@ void GLWidget::decreaseQuadRecursion()
     quadLevel--;
     if (quadLevel <= 1)
         quadLevel = 1;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
@@ -120,35 +131,35 @@ void GLWidget::movePointTo(int x, int y)
 {
     pillowModel.points[selectedPointX][selectedPointY].x = x;
     pillowModel.points[selectedPointX][selectedPointY].y = height - y;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::movePointUp()
 {
     pillowModel.points[selectedPointX][selectedPointY].y += step;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::movePointDown()
 {
     pillowModel.points[selectedPointX][selectedPointY].y -= step;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::movePointLeft()
 {
     pillowModel.points[selectedPointX][selectedPointY].x -= step;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::movePointRight()
 {
     pillowModel.points[selectedPointX][selectedPointY].x += step;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
@@ -158,7 +169,7 @@ void GLWidget::adjustR(bool way)
         pillowModel.r += 0.01;
     else
         pillowModel.r -= 0.01;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
@@ -168,7 +179,7 @@ void GLWidget::adjustG(bool way)
         pillowModel.g += 0.01;
     else
         pillowModel.g -= 0.01;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
@@ -178,7 +189,7 @@ void GLWidget::adjustB(bool way)
         pillowModel.b += 0.01;
     else
         pillowModel.b -= 0.01;
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
@@ -291,6 +302,6 @@ void GLWidget::selectPoint(int id)
         break;
     }
     }
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel, true, true);
 }
 

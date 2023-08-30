@@ -5,6 +5,7 @@
 #include <fstream>
 #include <map>
 #include "shm.h"
+#include "resources.h"
 
 GLWidget::GLWidget(std::map<std::string, std::string> configuration)
     : configuration(configuration)
@@ -114,7 +115,7 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
     int size = 2 * header->size + sizeof(*header);
     shm = (t_argusExchange *)getSHM(out0.c_str(), size);
 #endif
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCurrent, Zlevel, true, true);
 }
 
 GLWidget::~GLWidget()
@@ -134,8 +135,18 @@ void GLWidget::initializeGL()
     glLoadIdentity();
 
     glEnable(GL_TEXTURE_2D);
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glGenTextures(1, &textureCapture);
+    glBindTexture(GL_TEXTURE_2D, textureCapture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable( GL_BLEND );
+
+    glEnable(GL_TEXTURE_2D);
+    glGenTextures(1, &textureHSV);
+    glBindTexture(GL_TEXTURE_2D, textureHSV);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -155,12 +166,14 @@ void GLWidget::initializeGL()
     glListIndexGrid = glGenLists (1);
 
     updateTextureFromSharedMemory(data);
-    calcPillow(pillowModel, recursionLevel, texture, Zlevel, true, true);
+    loadHSVTexture();
+    textureCurrent = textureCapture;
+    calcPillow(pillowModel, recursionLevel, textureCurrent, Zlevel, true, true);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
 }
 
 void GLWidget::updateTextureFromSharedMemory(char *data) {
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, textureCapture);
 #ifdef WIN32
     width = header->width;
     height = header->height;
@@ -178,6 +191,18 @@ void GLWidget::updateTextureFromSharedMemory(char *data) {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void GLWidget::loadHSVTexture() {
+    glBindTexture(GL_TEXTURE_2D, textureHSV);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 320, 240, 0, GL_BGRA, GL_UNSIGNED_BYTE, hsv_rgba);
+    GLERR;
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void GLWidget::paintGL()
 {
 #ifdef WIN32
@@ -186,16 +211,17 @@ void GLWidget::paintGL()
         data = (char*)((char*)shm + sizeof(*header));
     else
         data = (char*)((char*)shm + sizeof(*header) + header->size);
-    updateTextureFromSharedMemory(data);
+    if (textureCurrent == textureCapture)
+        updateTextureFromSharedMemory(data);
 #endif
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, textureCurrent);
 
     drawPillow();
     if (editMode)
     {
         drawPillowFdf();
-        drawEditMode(pillowModel, recursionLevel, texture, Zlevel + 1, true, true);
+        drawEditMode(pillowModel, recursionLevel, textureCurrent, Zlevel + 1, true, true);
     }
 }
