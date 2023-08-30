@@ -266,6 +266,17 @@ void ArgusWindow::eventLoop()
         DispatchMessage(&msg);
     }
 #elif __linux__
+//    XGrabPointer(display,
+//                 window,
+//                 True,
+//                 PointerMotionMask | ButtonPressMask | ButtonReleaseMask,
+//                 GrabModeAsync,
+//                 GrabModeAsync,
+//                 None,
+//                 None,
+//                 CurrentTime);
+
+    XAllowEvents(display,AsyncPointer, CurrentTime);
     if (XPending(display))
     {
         XNextEvent(display, &event);
@@ -563,7 +574,7 @@ void ArgusWindow::keyPressEvent(int key)
     else if (key == XK_Up) {
         glWidget->movePointUp();
     }
-    else if (key == XK_Up) {
+    else if (key == XK_Down) {
         glWidget->movePointDown();
     }
     else if (key == XK_Left) {
