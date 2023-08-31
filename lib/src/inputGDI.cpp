@@ -54,37 +54,44 @@ bool input::initGDI(HWND hWndToCapture)
 
 bool input::captureGDI(char * buffer)
 {
-    hWindow = FindWindow(NULL,(LPCSTR)title.c_str());
-    hScrDC = GetDC(hWindow);
+    hScrDC = GetDC(hWnd);
+    if (!hScrDC)
+        exit(EXIT_FAILURE);
+
     HDC hMemDC = CreateCompatibleDC(hScrDC);
+    if (!hMemDC)
+        exit(EXIT_FAILURE);
 
     hBitmap = CreateCompatibleBitmap(hScrDC, width, height);
-    hBitmapOld = (HBITMAP)SelectObject (hMemDC, hBitmap);
-    BitBlt(hMemDC, 0, 0, width, height, hScrDC, 0, 0, SRCCOPY);
+    if (!hBitmap)
+        exit(EXIT_FAILURE);
 
-    hBitmap = (HBITMAP)SelectObject(hMemDC, hBitmapOld);
+    HBITMAP hBitmapOld = (HBITMAP)SelectObject(hMemDC, hBitmap);
+    if (!hBitmapOld)
+        exit(EXIT_FAILURE);
+
+    if (!BitBlt(hMemDC, 0, 0, width, height, hScrDC, 0, 0, SRCCOPY))
+        exit(EXIT_FAILURE);
 
     BITMAP Bm;
     BITMAPINFO BitInfo;
     ZeroMemory(&BitInfo, sizeof(BITMAPINFO));
     ZeroMemory(&Bm, sizeof(BITMAP));
     BitInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    BitInfo.bmiHeader.biBitCount = 0;
-    if(!::GetDIBits(hScrDC, hBitmap, 0, 0, NULL, &BitInfo, DIB_RGB_COLORS))
-        return (NULL);
+    BitInfo.bmiHeader.biBitCount = 0; // Exemple : 24 bits par pixel pour RVB
+    if (!GetDIBits(hMemDC, hBitmap, 0, 0, NULL, &BitInfo, DIB_RGB_COLORS))
+        exit(EXIT_FAILURE);
     Bm.bmHeight = BitInfo.bmiHeader.biHeight;
-    Bm.bmWidth  = BitInfo.bmiHeader.biWidth;
+    Bm.bmWidth = BitInfo.bmiHeader.biWidth;
     BitInfo.bmiHeader.biCompression = 0;
 
-    if(!::GetDIBits(hdcWindow, hBitmap, 0, Bm.bmHeight, buffer, &BitInfo, DIB_RGB_COLORS))
-    {
-        return (false);
-    }
+    if (!GetDIBits(hMemDC, hBitmap, 0, Bm.bmHeight, buffer, &BitInfo, DIB_RGB_COLORS))
+        exit(EXIT_FAILURE);
 
     DeleteObject(hBitmapOld);
     DeleteObject(hBitmap);
     DeleteDC(hMemDC);
-    ReleaseDC(hWindow, hScrDC);
+    ReleaseDC(hWnd, hScrDC);
 
     return true;
 }

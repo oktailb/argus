@@ -30,7 +30,7 @@ add_library(${PROJECT_NAME}
     ${PROJECT_SOURCES}
 )
 if (WIN32)
-    set(ARGUS_DEPS opengl32 glu32 d3d9 d3dx9 dxgi)
+    set(ARGUS_DEPS opengl32 glu32 d3d11 d3dx11 dxgi)
 else()
     set(ARGUS_DEPS GL GLU X11 Xext Xrandr)
 endif(WIN32)

@@ -8,6 +8,24 @@
 #pragma comment(lib, "d3dx9.lib")
 #include <d3dx9.h>
 #include <D3dx9tex.h>
+#include <windows.h>
+#include <DXGI.h>
+#include <d3dx9tex.h>
+#include <windows.h>
+#pragma comment(lib, "d3d9.lib")
+#include <d3d9.h>
+#include <dwmapi.h>
+#define STRICT  1
+#include <windows.h>
+#include <d3d11.h>
+#include <d3d11sdklayers.h>
+#include <dxgi.h>
+#include <d3dcommon.h>
+#include <D3Dcompiler.h>
+#include <Windows.h>
+#include <psapi.h>		// NT only!
+#pragma comment(lib, "psapi")	// NT only!
+
 #elif __linux__
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -53,10 +71,9 @@ public:
     bool                                                directX;
     bool                                                gdi;
     HDC													hScrDC;
-    HWND												hWindow;
+    HWND												hWnd;
     LPVOID                                              region;
     static LRESULT WINAPI								WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-    HWND                                                hWnd;
     BITMAPINFOHEADER                                    bi;
     RECT                                                rect;
     HDC                                                 hdcScreen;
@@ -73,6 +90,12 @@ public:
     IDirect3DSurface9*                                  pSurface;
     D3DPRESENT_PARAMETERS                               d3dpp;
     D3DLOCKED_RECT                                      lockedRect;
+    ID3D11Device *                                      device;
+    ID3D11DeviceContext *                               deviceContext;
+    IDXGISwapChain*                                     swapChain;
+    ID3D11Texture2D*                                    pBackBuffer;
+    IDXGIFactory*                                       dxgiFactory;
+
 
     int                                                 nb_adapters;
     int                                                 nb_screens;

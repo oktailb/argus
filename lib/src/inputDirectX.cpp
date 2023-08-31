@@ -1,7 +1,4 @@
 #include <input.hpp>
-#include "shm.h"
-#include "configuration.h"
-#include "types.h"
 #include <iostream>
 #include <stdio.h>
 #include <unistd.h>
@@ -11,70 +8,127 @@
 
 #ifdef WIN32
 #include <windows.h>
-#include <DXGI.h>
-#include <d3dx9tex.h>
 #include <windows.h>
-#pragma comment(lib, "d3d9.lib")
-#include <d3d9.h>
-#include <dwmapi.h>
-#define STRICT  1
-#include <windows.h>
+#pragma comment(lib, "d3d11.lib")
 #include <d3d11.h>
 #include <d3d11sdklayers.h>
-#include <dxgi.h>
 #include <d3dcommon.h>
 #include <D3Dcompiler.h>
-#include <Windows.h>
-#include <psapi.h>		// NT only!
-#pragma comment(lib, "psapi")	// NT only!
+#include <comdef.h>
 
 using namespace std;
 
-#define WIDEN2(x) L ## x
-#define WIDEN(x) WIDEN2(x)
-#define __WFILE__ WIDEN(__FILE__)
-#define HRCHECK(__expr) {hr=(__expr);if(FAILED(hr)){wprintf(L"FAILURE 0x%08X (%i)\n\tline: %u file: '%s'\n\texpr: '" WIDEN(#__expr) L"'\n",hr, hr, __LINE__,__WFILE__);return false;}}
-#define RELEASE(__p) {if(__p!=nullptr){__p->Release();__p=nullptr;}}
-
 bool input::initDirectX(HWND hWndToCapture)
 {
-    UINT adapter = D3DADAPTER_DEFAULT;
-    HRESULT hr = S_OK;
-    D3DDISPLAYMODE mode;
+    // Initialisation de DirectX et création du device et du deviceContext
+    D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_9_1 };
+    D3D_FEATURE_LEVEL selectedFeatureLevel;
 
-    d3dpp = { 0 };
-    pD3D = Direct3DCreate9(D3D_SDK_VERSION);
-    HRCHECK(pD3D->GetAdapterDisplayMode(adapter, &mode));
+    HRESULT hr = D3D11CreateDevice(
+        nullptr,
+        D3D_DRIVER_TYPE_HARDWARE,
+        nullptr,
+        0,
+        featureLevels,
+        1,
+        D3D11_SDK_VERSION,
+        &device,
+        &selectedFeatureLevel,
+        &deviceContext
+        );
 
-    d3dpp.Windowed = TRUE;
-    d3dpp.BackBufferCount = 1;
-    d3dpp.BackBufferHeight = height;
-    d3dpp.BackBufferWidth = width;
-    d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-    d3dpp.hDeviceWindow = hWndToCapture;
+    if (FAILED(hr)) {
+        _com_error err(hr);
+        LPCTSTR errMsg = err.ErrorMessage();
+        cerr << "Erreur lors de la création du device : " << errMsg << std::endl;
+        exit(0);
+    }
 
-    HRCHECK(pD3D->CreateDevice(adapter, D3DDEVTYPE_HAL, NULL, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &pDevice));
-    HRCHECK(pDevice->CreateOffscreenPlainSurface(width, height, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &pSurface, nullptr));
+    // Initialisation de DXGI Factory
+    dxgiFactory = nullptr;
+    hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&dxgiFactory);
+
+    if (FAILED(hr)) {
+        // Gérer l'erreur
+        _com_error err(hr);
+        LPCTSTR errMsg = err.ErrorMessage();
+        cerr << "Erreur lors de la création de la factory : " << errMsg << std::endl;
+        deviceContext->Release();
+        device->Release();
+        exit(0);
+    }
+
+    // Création du swap chain
+    swapChain = nullptr;
+    DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+    // Initialisez cette structure avec les paramètres appropriés
+    swapChainDesc.BufferDesc.Width = width; // Largeur de la fenêtre
+    swapChainDesc.BufferDesc.Height = height; // Hauteur de la fenêtre
+    swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Format des pixels (par exemple, RGBA8 non signé)
+    swapChainDesc.BufferDesc.RefreshRate.Numerator = fps; // Taux de rafraîchissement en images par seconde (numérateur)
+    swapChainDesc.BufferDesc.RefreshRate.Denominator = 1; // Taux de rafraîchissement en images par seconde (dénominateur)
+    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // Utilisation du swap chain
+    swapChainDesc.BufferCount = 1; // Nombre de tampons dans le swap chain
+    swapChainDesc.OutputWindow = hWnd; // Fenêtre cible
+    swapChainDesc.SampleDesc.Count = 1; // Nombre d'échantillons par pixel
+    swapChainDesc.SampleDesc.Quality = 0; // Qualité d'échantillonnage
+    swapChainDesc.Windowed = TRUE; // Mode fenêtré (TRUE) ou plein écran (FALSE)
+    hr = dxgiFactory->CreateSwapChain(device, &swapChainDesc, &swapChain);
+
+    if (FAILED(hr)) {
+        // Gérer l'erreur
+        _com_error err(hr);
+        LPCTSTR errMsg = err.ErrorMessage();
+        cerr << "Erreur lors de la création de la swap chain : " << errMsg << std::endl;
+
+        dxgiFactory->Release();
+        deviceContext->Release();
+        device->Release();
+        exit(0);
+    }
+
+    // ...
 
     return true;
 }
 
 bool input::captureDirectX(char * buffer)
 {
-    HRESULT hr = S_OK;
+    // Lorsque vous souhaitez capturer les pixels
+    swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+    ID3DXBuffer* pBuffer = nullptr;
+    // Maintenant, vous pouvez utiliser pBackBuffer et deviceContext pour la capture des pixels
+    D3D11_TEXTURE2D_DESC desc;
+    pBackBuffer->GetDesc(&desc);
 
-    HRCHECK(pSurface->LockRect(&lockedRect, NULL, 0));
-    memcpy(buffer, lockedRect.pBits, lockedRect.Pitch * height);
-    HRCHECK(pSurface->UnlockRect());
+    desc.BindFlags = 0;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    desc.Usage = D3D11_USAGE_STAGING;
+
+    ID3D11Texture2D* pStagingTexture;
+    device->CreateTexture2D(&desc, nullptr, &pStagingTexture);
+
+    deviceContext->CopyResource(pStagingTexture, pBackBuffer);
+
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    deviceContext->Map(pStagingTexture, 0, D3D11_MAP_READ, 0, &mappedResource);
+
+
+//    // Maintenant, vous pouvez accéder aux pixels via mappedResource.pData
+    memcpy(buffer, mappedResource.pData, width * height * 4);
+
+    deviceContext->Unmap(pStagingTexture, 0);
 
     return true;
 }
 
 void input::cleanupDirectX()
 {
-    RELEASE(pSurface);
-    RELEASE(pDevice);
-    RELEASE(pD3D);
+    // Nettoyage
+    pBackBuffer->Release();
+    swapChain->Release();
+    deviceContext->Release();
+    device->Release();
 }
 
 #endif
