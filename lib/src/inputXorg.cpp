@@ -73,7 +73,7 @@ bool input::initXSHM()
 
 bool input::captureXSHM()
 {
-    XShmGetImage(display, root, ximg, 0, 0, 0xffffffff);
+    XShmGetImage(display, root, ximg, 0, 0, 0x00ffffff);
     if (XShmHaveFail)
     {
         //std::cerr << "XSHM failed, fallback method" << std::endl;

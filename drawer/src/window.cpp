@@ -202,11 +202,15 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
 
 #elif __linux__
     display = XOpenDisplay(nullptr);
+
     if (!display)
     {
         std::cerr << "Failed to open X display." << std::endl;
         return;
     }
+
+    Window root = DefaultRootWindow(display);
+    XEvent event;
 
     GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
     XVisualInfo* vi = glXChooseVisual(display, DefaultScreen(display), att);
@@ -231,6 +235,13 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
 
     context = glXCreateContext(display, vi, nullptr, GL_TRUE);
     glXMakeCurrent(display, window, context);
+
+    XSelectInput(display, window,     ButtonPressMask
+                                    | ButtonReleaseMask
+                                    | PointerMotionMask
+                                    | PointerMotionMask
+                                    | KeyPressMask
+                                    | KeyReleaseMask);
 #endif
     ready = true;
 }
@@ -275,8 +286,6 @@ void ArgusWindow::eventLoop()
 //                 None,
 //                 None,
 //                 CurrentTime);
-
-    XAllowEvents(display,AsyncPointer, CurrentTime);
     if (XPending(display))
     {
         XNextEvent(display, &event);
@@ -405,7 +414,8 @@ HWND ArgusWindow::getGlThread() const
 void ArgusWindow::mousePressEvent(int button, int x, int y)
 {
     inMove = true;
-    glWidget->setLastPos(x, y);
+    if (glWidget->inEditMode())
+        glWidget->setLastPos(x, y);
 }
 
 void ArgusWindow::mouseMoveEvent(int x, int y)
@@ -414,8 +424,12 @@ void ArgusWindow::mouseMoveEvent(int x, int y)
     y = std::min(y, height);
     x = std::max(x, 0);
     y = std::max(y, 0);
-    glWidget->setLastPos(x, y);
-    if (inMove && glWidget->inEditMode()) glWidget->movePointTo(x, y);
+
+    if (inMove && glWidget->inEditMode())
+    {
+        glWidget->setLastPos(x, y);
+        glWidget->movePointTo(x, y);
+    }
 }
 
 void ArgusWindow::mouseReleaseEvent(int button, int x, int y)

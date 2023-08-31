@@ -566,9 +566,9 @@ void input::shoot()
     captureXSHM();
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
-    if (duration.count() < 1000.0/60.0)
+    if (videoSync && duration.count() < 1000.0/fps)
     {
-        usleep(1000000.0/60.0 - duration.count());
+        usleep(1000000.0/fps - duration.count());
     }
 }
 

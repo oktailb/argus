@@ -180,7 +180,7 @@ void GLWidget::updateTextureFromSharedMemory(char *data) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
 #elif __linux__
     capturer->shoot();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, capturer->getXimg()->data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, capturer->getXimg()->data);
 #endif
     GLERR;
     glGenerateMipmap(GL_TEXTURE_2D);
