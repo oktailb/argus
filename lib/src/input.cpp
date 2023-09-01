@@ -522,11 +522,13 @@ XImage *input::getXimg() const
     return ximg;
 }
 
-input::input(std::map<std::string, std::string> &configuration)
+input::input(std::string filename)
     :
-    configuration(configuration)
+    filename(filename)
 {
     bool res;
+
+    configuration = readConfiguration(filename);
 
     title = configuration["General/title"];
     std::string method = configuration["General/method"];

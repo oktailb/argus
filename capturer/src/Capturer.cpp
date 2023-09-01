@@ -15,6 +15,8 @@
 #include <sstream>
 #include <chrono>
 
+#include <string.h>
+
 #include "argus.h"
 #include "configuration.h"
 
@@ -71,7 +73,7 @@ private:
 class SubProcessRunner
 {
 public:
-    SubProcessRunner(const std::string& program, int argc, char** argv)
+    SubProcessRunner(const std::string& program, const std::string& desktop, int argc, char** argv)
         : program(program)
         , argc(argc)
         , argv(argv)
@@ -128,6 +130,8 @@ public:
 private:
     std::string program;
     pid_t childPid;
+    int                 argc;
+    char**              argv;
 };
 
 void sigchldHandler(int signo)

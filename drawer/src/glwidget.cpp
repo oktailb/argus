@@ -15,7 +15,7 @@ GLWidget::GLWidget(std::string filename)
 #ifdef WIN32
     virtualDesktop = (configuration["General/virtualDesktop"] == "true");
 #elif __linux__
-    capturer = new input(configuration);
+    capturer = new input(filename);
     width = capturer->getWidth();
     height = capturer->getHeight();
 #endif

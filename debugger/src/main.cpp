@@ -118,12 +118,12 @@ input* capturer;
 
 void updateImageFromSharedMemory(Display* display, Window window) {
     capturer->shoot();
-    XPutImage(display, window, DefaultGC(display, DefaultScreen(display)), capturer->getXimg(), 0, 0, 0, 0, capturer->width, capturer->height);
+    XPutImage(display, window, DefaultGC(display, DefaultScreen(display)), capturer->getXimg(), 0, 0, 0, 0, capturer->getWidth(), capturer->getHeight());
 //    XDestroyImage(capturer->getXimg());
 }
 
 int main(int argc, char**argv) {
-    usage();
+    usage(argc, argv);
     std::string out0 = "prefix Argus SharedMemory";
 
     std::map<std::string, std::string> configuration = readConfiguration(argv[1]);
@@ -134,8 +134,8 @@ int main(int argc, char**argv) {
         return 1;
     }
 
-    capturer = new input(configuration);
-    Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0, capturer->width, capturer->height, 0, BlackPixel(display, DefaultScreen(display)), WhitePixel(display, DefaultScreen(display)));
+    capturer = new input(argv[1]);
+    Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0, capturer->getWidth(), capturer->getHeight(), 0, BlackPixel(display, DefaultScreen(display)), WhitePixel(display, DefaultScreen(display)));
 
     std::string title = configuration["General/title"] + " copy";
     XStoreName(display, window, title.c_str());

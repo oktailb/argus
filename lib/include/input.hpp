@@ -55,6 +55,11 @@ public:
 
 	void												shoot();
     void                                                configure();
+    int getWidth() const;
+    int getHeight() const;
+#ifdef __linux__
+    XImage *getXimg() const;
+#endif
 
 private:
     std::string                                         filename;
@@ -125,9 +130,6 @@ private:
     void listDisplay(std::map<std::string, Window> &listOut);
     Window windowFromNameSearch(Display *display, Window current, char const *needle);
     Window windowFromPidSearch(Display *display, Window current, unsigned long  _pid);
-    XImage *getXimg() const;
 #endif
     t_argusExchange     *header;
-    int getWidth() const;
-    int getHeight() const;
 };
