@@ -6,11 +6,6 @@
 
 #include "webServer.h"
 
-#ifdef WIN32
-#include <windows.h>
-//#include "desktop.h"
-#elif __linux__
-#endif
 
 #include "window.h"
 #include "configuration.h"
@@ -57,8 +52,6 @@ int main(int argc, char *argv[])
 {
     usage(argc, argv);
 
-    std::cerr << "TEST" << std::endl;
-
     std::map<std::string, std::string> configuration = readConfiguration(argv[1]);
 
     bool virtualDesktop = (configuration["General/virtualDesktop"] == "true");
@@ -75,17 +68,8 @@ int main(int argc, char *argv[])
 
     srv->start();
 
-//    if (virtualDesktop)
-//        createDedicatedDesktop("Argus Desktop", w.getGlThread());
     w.exec();
 
-//    if (virtualDesktop)
-//        restoreOriginalDesktop();
     return (EXIT_SUCCESS);
 }
-#ifdef WIN32
-int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, char*, int nShowCmd)
-{
-    return main(__argc, __argv);
-}
-#endif
+

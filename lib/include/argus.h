@@ -2,6 +2,21 @@
 #include <string>
 #include <iostream>
 
+#ifdef WIN32
+#include <windows.h>
+#include "desktop.h"
+#elif __linux__
+#endif
+
+#ifdef WIN32
+int main(int argc, char** argv);
+
+int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, char*, int nShowCmd)
+{
+    return main(__argc, __argv);
+}
+#endif
+
 void usage(int argc, char **argv)
 {
     if (argc == 1)

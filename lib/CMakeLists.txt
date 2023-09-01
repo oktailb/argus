@@ -23,6 +23,7 @@ set(PROJECT_SOURCES
     src/configuration.cpp       include/configuration.h
     src/webServer.cpp           include/webServer.h
     src/webRenderer.cpp         include/webRenderer.h
+    src/subprocessrunner.cpp    include/subprocessrunner.h
     src/input.cpp               include/input.hpp
     src/inputGDI.cpp
     src/inputDirectX.cpp
