@@ -15,6 +15,7 @@
 #include "window.h"
 #include "configuration.h"
 #include "resources.h"
+#include "argus.h"
 
 class cssRenderer : public webRenderer {
 public:
@@ -52,20 +53,18 @@ public:
     virtual void render(const std::string url) { setData(index_html, index_html_size); }
 };
 
-#ifdef WIN32
-int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
-#elif __linux__
 int main(int argc, char *argv[])
-#endif
 {
+    usage(argc, argv);
+
     std::cerr << "TEST" << std::endl;
 
-    std::map<std::string, std::string> configuration = readConfiguration("config.ini");
+    std::map<std::string, std::string> configuration = readConfiguration(argv[1]);
 
     bool virtualDesktop = (configuration["General/virtualDesktop"] == "true");
 
     webServer *srv = new webServer(configuration["General/webServerInterface"], std::stoi(configuration["General/webServerPort"]));
-    ArgusWindow w(configuration);
+    ArgusWindow w(argv[1]);
 
     srv->addResource("/ajaxlib.js"  , new ajaxLibRenderer(std::string("text/javascript"), srv));
     srv->addResource("/style.css"   , new cssRenderer(std::string("text/css")           , srv));
@@ -84,3 +83,9 @@ int main(int argc, char *argv[])
 //        restoreOriginalDesktop();
     return (EXIT_SUCCESS);
 }
+#ifdef WIN32
+int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, char*, int nShowCmd)
+{
+    return main(__argc, __argv);
+}
+#endif

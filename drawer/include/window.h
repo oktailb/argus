@@ -8,7 +8,7 @@ class ArgusWindow
 {
 
 public:
-    ArgusWindow(std::map<std::string, std::string> configuration);
+    ArgusWindow(std::string filename);
     ~ArgusWindow();
 
 
@@ -27,7 +27,7 @@ private:
     std::map<std::string, std::string> configuration;
     int         fps;
     double      delayMs;
-
+    std::string filename;
     GLWidget *  glWidget;
     bool        shiftPressed;
     bool        ctrlPressed;

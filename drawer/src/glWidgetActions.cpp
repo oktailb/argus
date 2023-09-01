@@ -201,7 +201,7 @@ void GLWidget::save(std::string conf)
     configuration["General/videoSync"] = videoSync?"true":"false";
     configuration["General/stats"] = stats?"true":"false";
 
-    saveConfiguration(configuration, "config.ini");
+    saveConfiguration(configuration, filename);
 }
 
 void GLWidget::selectPoint(int id)

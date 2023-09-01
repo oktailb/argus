@@ -5,6 +5,7 @@ project(argus   VERSION 0.1
                 DESCRIPTION "Software performing realtime geometry and blending utility for large media applications"
                 HOMEPAGE_URL "https://github.com/oktailb/argus"
             )
+
 include("build.cmake")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

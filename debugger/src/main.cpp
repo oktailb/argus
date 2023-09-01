@@ -6,6 +6,7 @@
 #include "shm.h"
 #include "desktop.h"
 #include "types.h"
+#include "argus.h"
 
 #include <iostream>
 #include <string>
@@ -104,6 +105,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     return msg.wParam;
 }
+
 #elif __linux__
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -120,10 +122,11 @@ void updateImageFromSharedMemory(Display* display, Window window) {
 //    XDestroyImage(capturer->getXimg());
 }
 
-int main() {
+int main(int argc, char**argv) {
+    usage();
     std::string out0 = "prefix Argus SharedMemory";
 
-    std::map<std::string, std::string> configuration = readConfiguration("config.ini");
+    std::map<std::string, std::string> configuration = readConfiguration(argv[1]);
 
     Display* display = XOpenDisplay(nullptr);
     if (!display) {

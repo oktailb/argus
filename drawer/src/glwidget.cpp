@@ -6,10 +6,12 @@
 #include <map>
 #include "shm.h"
 #include "resources.h"
+#include "configuration.h"
 
-GLWidget::GLWidget(std::map<std::string, std::string> configuration)
-    : configuration(configuration)
+GLWidget::GLWidget(std::string filename)
+    : filename(filename)
 {
+    configuration = readConfiguration(filename);
 #ifdef WIN32
     virtualDesktop = (configuration["General/virtualDesktop"] == "true");
 #elif __linux__

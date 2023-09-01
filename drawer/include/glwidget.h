@@ -72,7 +72,7 @@ if (error != GL_NO_ERROR) { \
 class GLWidget
 {
 public:
-    GLWidget(std::map<std::string, std::string> configuration);
+    GLWidget(std::string filename);
     ~GLWidget();
 
     bool inEditMode() {return editMode;}
@@ -125,6 +125,8 @@ private:
     unsigned int textureCapture;
     unsigned int textureHSV;
     unsigned int textureCurrent;
+
+    std::string filename;
 
 #ifdef WIN32
     LPVOID shm;

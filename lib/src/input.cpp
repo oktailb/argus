@@ -106,7 +106,7 @@ void input::configureWindow()
                 hWnd = it->second;
                 title = it->first;
                 configuration["General/title"] = it->first;
-                saveConfiguration(configuration, "config.ini");
+                saveConfiguration(configuration, filename);
                 break;
             }
             it++;
@@ -118,12 +118,13 @@ void input::configureWindow()
     height = rect.bottom - rect.top;
 }
 
-input::input(std::map<std::string, std::string> &configuration)
+input::input(std::string filename)
     :
-      configuration(configuration)
+      filename(filename)
 {
     bool res;
 
+    configuration = readConfiguration(filename);
     title = configuration["General/title"];
     std::string method = configuration["General/method"];
     full = (title.compare("full") == 0);
@@ -498,7 +499,7 @@ void input::configure()
                 title = it->first;
                 configuration["General/title"] = it->first;
                 std::cerr << title << " Selected." << std::endl;
-                saveConfiguration(configuration, "config.ini");
+                saveConfiguration(configuration, filename);
                 break;
             }
             it++;

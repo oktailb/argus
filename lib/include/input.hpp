@@ -47,25 +47,27 @@
 class input
 {
 public:
-    input(std::map<std::string, std::string> &configuration);
+    input(std::string filename);
     ~input();
-
-    std::map<std::string, std::string>                  &configuration;
-
-    int													width;
-	int													height;
-    std::string											title;
-	bool												full;
-    int                                                 fps;
-    double                                              delayMs;
-    bool                                                videoSync;
-    bool                                                stats;
 
     bool                                                captureSingleWindow(char * buffer, int& width, int& height);
     bool                                                captureFullScreen(char * buffer, int& width, int& height);
 
 	void												shoot();
     void                                                configure();
+
+private:
+    std::string                                         filename;
+    std::map<std::string, std::string>                  configuration;
+
+    int													width;
+    int													height;
+    std::string											title;
+    bool												full;
+    int                                                 fps;
+    double                                              delayMs;
+    bool                                                videoSync;
+    bool                                                stats;
 
 #ifdef WIN32
     bool                                                directX;

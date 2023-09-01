@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "shm.h"
+#include "configuration.h"
 
 #ifdef __linux__
 #include "input.hpp"
@@ -246,15 +247,16 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
     ready = true;
 }
 
-ArgusWindow::ArgusWindow(std::map<std::string, std::string> configuration)
+ArgusWindow::ArgusWindow(std::string filename)
     :
-    configuration(configuration)
+    filename(filename)
 {
+    configuration = readConfiguration(filename);
     shiftPressed = false;
     ctrlPressed = false;
     inMove = false;
     fullscreen = (configuration["General/virtualDesktop"].compare("true") == 0);
-    glWidget = new GLWidget(configuration);
+    glWidget = new GLWidget(filename);
 #ifdef __linux__
     width = glWidget->getCapturer()->getWidth();
     height = glWidget->getCapturer()->getHeight();
@@ -472,7 +474,7 @@ void ArgusWindow::keyPressEventASCII(char key)
         glWidget->adjustB(ctrlPressed);
     }
     else if (key == 's') {
-        glWidget->save("config.ini");
+        glWidget->save(filename);
     }
     else if ((key >= '1') && (key <= '9')) {
         glWidget->selectPoint(key - '0');
@@ -559,7 +561,7 @@ void ArgusWindow::keyPressEvent(int key)
         glWidget->adjustB(ctrlPressed);
     }
     else if (key == 's') {
-        glWidget->save("config.ini");
+        glWidget->save(filename);
     }
     else if ((key >= '1') && (key <= '9')) {
         glWidget->selectPoint(key - '0');
