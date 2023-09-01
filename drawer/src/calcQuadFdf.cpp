@@ -1,6 +1,6 @@
 #include "glwidget.h"
 
-void		GLWidget::calcQuadFdf(t_Quad h, int sub, GLuint id, float level, int active)
+void		GLWidget::calcQuadFdf(t_Quad h, int sub, GLuint id)
 {
-    calcQuadFdfRec(h, sub, id, level, active);
+    calcQuadFdfRec(h, sub, id);
 }

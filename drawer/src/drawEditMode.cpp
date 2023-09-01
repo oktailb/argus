@@ -1,6 +1,6 @@
 #include "glwidget.h"
 
-void GLWidget::drawEditMode(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active)
+void GLWidget::drawEditMode(PillowGraphy p, int sub, GLuint id, float level)
 {
     t_Point                     mouseCoord;
 
@@ -14,7 +14,7 @@ void GLWidget::drawEditMode(PillowGraphy p, int sub, GLuint id, float level, int
         {
             if (DIST(p.points[pointx][pointy], mouseCoord) < crossSize)
             {
-                drawCross(p.points[pointx][pointy].x, p.points[pointx][pointy].y, crossSize, TextureID, Zlevel, true);
+                drawCross(p.points[pointx][pointy].x, p.points[pointx][pointy].y, crossSize, TextureID, Zlevel + level, true);
                 find ++;
                 selectedPointX = pointx;
                 selectedPointY = pointy;
@@ -22,7 +22,7 @@ void GLWidget::drawEditMode(PillowGraphy p, int sub, GLuint id, float level, int
                 break;
             }
             else
-                drawCross(p.points[pointx][pointy].x, p.points[pointx][pointy].y, crossSize, TextureID, Zlevel, false);
+                drawCross(p.points[pointx][pointy].x, p.points[pointx][pointy].y, crossSize, TextureID, Zlevel + level, false);
         }
     }
     if (find == 0)

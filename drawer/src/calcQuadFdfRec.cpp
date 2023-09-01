@@ -1,18 +1,18 @@
 #include "glwidget.h"
 
-void		GLWidget::calcQuadFdfRec(t_Quad h, int sub, GLuint id, float level, int active)
+void		GLWidget::calcQuadFdfRec(t_Quad h, int sub, GLuint id)
 {
     if (sub == 1)
     {
         glBegin(GL_QUADS);
         glColor4f(0.0f, 0.8f, 0.0f, 0.0f);
-        glVertex3d      (h.points[UpLeft].x       , h.points[UpLeft].y, level);
+        glVertex3d      (h.points[UpLeft].x       , h.points[UpLeft].y, Zlevel + 0.02);
         glColor4f(0.0f, 0.8f, 0.0f, 0.0f);
-        glVertex3d      (h.points[DownLeft].x     , h.points[DownLeft].y, level);
+        glVertex3d      (h.points[DownLeft].x     , h.points[DownLeft].y, Zlevel + 0.02);
         glColor4f(0.0f, 0.8f, 0.0f, 0.0f);
-        glVertex3d      (h.points[DownRight].x    , h.points[DownRight].y, level);
+        glVertex3d      (h.points[DownRight].x    , h.points[DownRight].y, Zlevel + 0.02);
         glColor4f(0.0f, 0.8f, 0.0f, 0.0f);
-        glVertex3d      (h.points[UpRight].x      , h.points[UpRight].y, level);
+        glVertex3d      (h.points[UpRight].x      , h.points[UpRight].y, Zlevel + 0.02);
         glEnd();
     }
     else
@@ -39,9 +39,9 @@ void		GLWidget::calcQuadFdfRec(t_Quad h, int sub, GLuint id, float level, int ac
         h4.points[UpRight]		= (h.points[UpRight]      + h.points[DownRight])/2;
         h4.points[DownLeft]		= (h.points[DownLeft]     + h.points[DownRight])/2;
 
-        calcQuadFdfRec(h1, sub - 1, id, level, active);
-        calcQuadFdfRec(h2, sub - 1, id, level, active);
-        calcQuadFdfRec(h3, sub - 1, id, level, active);
-        calcQuadFdfRec(h4, sub - 1, id, level, active);
+        calcQuadFdfRec(h1, sub - 1, id);
+        calcQuadFdfRec(h2, sub - 1, id);
+        calcQuadFdfRec(h3, sub - 1, id);
+        calcQuadFdfRec(h4, sub - 1, id);
     }
 }

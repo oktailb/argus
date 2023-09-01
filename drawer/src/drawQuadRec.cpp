@@ -1,6 +1,6 @@
 #include "glwidget.h"
 
-void		GLWidget::calcQuadRec(t_Quad h, int sub, GLuint id, float level, int show_border, int active)
+void		GLWidget::calcQuadRec(t_Quad h, int sub, GLuint id, float level)
 {
     glBindTexture  (GL_TEXTURE_2D, id);
     if (sub == 1)
@@ -79,10 +79,10 @@ void		GLWidget::calcQuadRec(t_Quad h, int sub, GLuint id, float level, int show_
         h4.alpha[DownLeft]	= (h.alpha[DownLeft]	+ h.alpha[DownRight])/2;
 
 
-        calcQuadRec(h1, sub - 1, id, level, show_border, active);
-        calcQuadRec(h2, sub - 1, id, level, show_border, active);
-        calcQuadRec(h3, sub - 1, id, level, show_border, active);
-        calcQuadRec(h4, sub - 1, id, level, show_border, active);
+        calcQuadRec(h1, sub - 1, id, level);
+        calcQuadRec(h2, sub - 1, id, level);
+        calcQuadRec(h3, sub - 1, id, level);
+        calcQuadRec(h4, sub - 1, id, level);
     }
 }
 

@@ -115,7 +115,7 @@ GLWidget::GLWidget(std::map<std::string, std::string> configuration)
     int size = 2 * header->size + sizeof(*header);
     shm = (t_argusExchange *)getSHM(out0.c_str(), size);
 #endif
-    calcPillow(pillowModel, recursionLevel, textureCurrent, Zlevel, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCurrent, Zlevel);
 }
 
 GLWidget::~GLWidget()
@@ -168,8 +168,8 @@ void GLWidget::initializeGL()
     updateTextureFromSharedMemory(data);
     loadHSVTexture();
     textureCurrent = textureCapture;
-    calcPillow(pillowModel, recursionLevel, textureCurrent, Zlevel, true, true);
-    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1, true, true);
+    calcPillow(pillowModel, recursionLevel, textureCurrent, Zlevel);
+    calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1);
 }
 
 void GLWidget::updateTextureFromSharedMemory(char *data) {
@@ -220,10 +220,14 @@ void GLWidget::paintGL()
 #ifdef __linux__
     updateTextureFromSharedMemory(NULL);
 #endif
-    drawPillow();
     if (editMode)
     {
+        calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel);
+        calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1);
+        drawPillow();
         drawPillowFdf();
-        drawEditMode(pillowModel, recursionLevel, textureCurrent, Zlevel + 1, true, true);
+        drawEditMode(pillowModel, recursionLevel, textureCurrent, Zlevel + 1);
     }
+    else
+        drawPillow();
 }

@@ -1,14 +1,14 @@
 #include "glwidget.h"
 #include "types.h"
 
-void GLWidget::calcPillowRec(PillowGraphy p, int sub, GLuint id, float level, int show_border, int active)
+void GLWidget::calcPillowRec(PillowGraphy p, int sub, GLuint id, float level)
 {
     if (sub == 1)
     {
-        calcQuadRec(pillow2Quad(0, 0, p), quadLevel, id, level, show_border, active);
-        calcQuadRec(pillow2Quad(0, 1, p), quadLevel, id, level, show_border, active);
-        calcQuadRec(pillow2Quad(1, 0, p), quadLevel, id, level, show_border, active);
-        calcQuadRec(pillow2Quad(1, 1, p), quadLevel, id, level, show_border, active);
+        calcQuadRec(pillow2Quad(0, 0, p), quadLevel, id, level);
+        calcQuadRec(pillow2Quad(0, 1, p), quadLevel, id, level);
+        calcQuadRec(pillow2Quad(1, 0, p), quadLevel, id, level);
+        calcQuadRec(pillow2Quad(1, 1, p), quadLevel, id, level);
     }
     else
     {
@@ -199,9 +199,9 @@ void GLWidget::calcPillowRec(PillowGraphy p, int sub, GLuint id, float level, in
                 0.0, 0.0
             };
 
-        calcPillowRec(p1, sub - 1, id, level, show_border, active);
-        calcPillowRec(p2, sub - 1, id, level, show_border, active);
-        calcPillowRec(p3, sub - 1, id, level, show_border, active);
-        calcPillowRec(p4, sub - 1, id, level, show_border, active);
+        calcPillowRec(p1, sub - 1, id, level);
+        calcPillowRec(p2, sub - 1, id, level);
+        calcPillowRec(p3, sub - 1, id, level);
+        calcPillowRec(p4, sub - 1, id, level);
     }
 }
