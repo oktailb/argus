@@ -26,7 +26,7 @@ float	calc_Alinear(float A, float B, float C)
     return (G);
 }
 
-t_Quad pillow2Quad(int x, int y, PillowGraphy p)
+t_Quad pillow2Quad(int x, int y, PillowMesh p)
 {
     t_Quad res;
     res.points [0] = p.points [0+x][0+y];

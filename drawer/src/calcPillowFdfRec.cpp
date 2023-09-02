@@ -1,6 +1,6 @@
 #include "glwidget.h"
 
-void GLWidget::calcPillowFdfRec(PillowGraphy p, int sub, GLuint id, float level)
+void GLWidget::calcPillowFdfRec(PillowMesh p, int sub, GLuint id, float level)
 {
     if (sub == 1)
     {
@@ -46,7 +46,7 @@ void GLWidget::calcPillowFdfRec(PillowGraphy p, int sub, GLuint id, float level)
         linear[OriginDownRight] = p.points[Down][Right];
         linear[OriginUpRight  ] = p.points[Up][Right];
 
-        PillowGraphy p1 =
+        PillowMesh p1 =
             {
                 {
                  {linear[OriginUpLeft], linear[BUpLeft]     , linear[OriginUp]    },
@@ -67,7 +67,7 @@ void GLWidget::calcPillowFdfRec(PillowGraphy p, int sub, GLuint id, float level)
                 0.0, 0.0
             };
 
-        PillowGraphy p2 =
+        PillowMesh p2 =
             {
                 {
                  {linear[OriginLeft]    , linear[JoinLeft]      , linear[OriginCenter]},
@@ -88,7 +88,7 @@ void GLWidget::calcPillowFdfRec(PillowGraphy p, int sub, GLuint id, float level)
                 0.0, 0.0
             };
 
-        PillowGraphy p3 =
+        PillowMesh p3 =
             {
                 {
                  {linear[OriginCenter], linear[JoinRight]      , linear[OriginRight]    },
@@ -109,7 +109,7 @@ void GLWidget::calcPillowFdfRec(PillowGraphy p, int sub, GLuint id, float level)
                 0.0, 0.0
             };
 
-        PillowGraphy p4 =
+        PillowMesh p4 =
             {
                 {
                  {linear[OriginUp]    , linear[BUpRight]     , linear[OriginUpRight]},

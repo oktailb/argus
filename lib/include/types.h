@@ -131,9 +131,9 @@ typedef struct		s_t_Quad
     GLfloat b;
     GLfloat	Smooth;
     GLfloat	SmoothLen;
-}								t_Quad;
+}					t_Quad;
 
-typedef struct		s_PillowGraphy
+typedef struct		s_PillowMesh
 {
     t_Point	points[3][3];
     t_Point	texture[3][3];
@@ -144,4 +144,4 @@ typedef struct		s_PillowGraphy
     GLfloat b;
     GLfloat	Smooth;
     GLfloat	SmoothLen;
-} PillowGraphy;
+} PillowMesh;

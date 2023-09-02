@@ -533,6 +533,7 @@ input::input(std::string filename)
     title = configuration["General/title"];
     std::string method = configuration["General/method"];
     full = (title.compare("full") == 0);
+    videoSync = (configuration["General/title"].compare("true") == 0);
 #ifdef WIN32
     directX = (method.compare("directx") == 0);
     gdi = (method.compare("gdi") == 0);

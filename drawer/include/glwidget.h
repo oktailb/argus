@@ -24,7 +24,7 @@
 
 t_Point	calc_linear(t_Point P1, t_Point P2, t_Point P3);
 float	calc_Alinear(float A, float B, float C);
-t_Quad  pillow2Quad(int x, int y, PillowGraphy p);
+t_Quad  pillow2Quad(int x, int y, PillowMesh p);
 
 #define BETWEEN(min, val, max) ((((val) >= (min)) && ((val) <= (max)))?1:0)
 
@@ -144,11 +144,11 @@ private:
     void	calcQuadRec(t_Quad h, int sub, GLuint id, float level);
     void    drawPillowFdf();
     void    drawPillow();
-    void    calcPillow(PillowGraphy p, int sub, GLuint id, float level);
-    void    calcPillowRec(PillowGraphy p, int sub, GLuint id, float level);
-    void    calcPillowFdf(PillowGraphy p, int sub, GLuint id, float level);
-    void    calcPillowFdfRec(PillowGraphy p, int sub, GLuint id, float level);
-    void    drawEditMode(PillowGraphy p, int sub, GLuint id, float level);
+    void    calcPillow(PillowMesh p, int sub, GLuint id, float level);
+    void    calcPillowRec(PillowMesh p, int sub, GLuint id, float level);
+    void    calcPillowFdf(PillowMesh p, int sub, GLuint id, float level);
+    void    calcPillowFdfRec(PillowMesh p, int sub, GLuint id, float level);
+    void    drawEditMode(PillowMesh p, int sub, GLuint id, float level);
     void	drawQuadFdf(t_Quad h, int sub, GLuint id);
     void	calcQuadFdf(t_Quad h, int sub, GLuint id);
     void	calcQuadFdfRec(t_Quad h, int sub, GLuint id);
@@ -181,12 +181,13 @@ private:
     bool                        stats;
     int                         endLoop;
     bool                        editMode;
+    bool                        edited;
     int                         recursionLevel;
     int                         quadLevel;
     std::string                     child;
     std::string                     prefix;
     std::string                     title;
-    PillowGraphy                pillowModel;
+    PillowMesh                pillowModel;
     double                      crossSize;
     GLuint                      glListIndexPicture;
     GLuint                      glListIndexGrid;

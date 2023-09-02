@@ -33,6 +33,7 @@ GLWidget::GLWidget(std::string filename)
     selectedPointY = 1;
     step = 1;
     editMode = false;
+    edited   = false;
 
     Zlevel = 1;
     std::cerr << configuration["General/PillowRec"] << std::endl;
@@ -224,8 +225,11 @@ void GLWidget::paintGL()
 #endif
     if (editMode)
     {
-        calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel);
-        calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1);
+        if (edited)
+        {
+            calcPillow(pillowModel, recursionLevel, textureCapture, Zlevel);
+            calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1);
+        }
         drawPillow();
         drawPillowFdf();
         drawEditMode(pillowModel, recursionLevel, textureCurrent, Zlevel + 1);

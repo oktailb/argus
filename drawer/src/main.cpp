@@ -54,8 +54,6 @@ int main(int argc, char *argv[])
 
     std::map<std::string, std::string> configuration = readConfiguration(argv[1]);
 
-    bool virtualDesktop = (configuration["General/virtualDesktop"] == "true");
-
     webServer *srv = new webServer(configuration["General/webServerInterface"], std::stoi(configuration["General/webServerPort"]));
     ArgusWindow w(argv[1]);
 

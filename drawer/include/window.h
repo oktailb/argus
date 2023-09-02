@@ -11,8 +11,9 @@ public:
     ArgusWindow(std::string filename);
     ~ArgusWindow();
 
-
     void exec();
+
+private:
     void mousePressEvent(int button, int x, int y);
     void mouseMoveEvent(int x, int y);
     void mouseReleaseEvent(int button, int x, int y);
@@ -23,7 +24,7 @@ public:
     void keyReleaseEvent(int key);
     void resizeGL(int width, int height) {glWidget->resizeGL(width, height);}
     void paintGL() {glWidget->paintGL();}
-private:
+
     std::map<std::string, std::string> configuration;
     int         fps;
     double      delayMs;
@@ -39,16 +40,16 @@ private:
     int         height;
     bool        ready;
 #ifdef WIN32
-    HWND getGlThread() const;
+    HWND        getGlThread() const;
 
-    HINSTANCE hInstance;
-    LPCSTR className;
-    LPCSTR windowTitle;
-    DWORD windowStyle;
-    WNDCLASS wc;
-    HWND hWnd;
-    HDC hDC;
-    HGLRC hRC;
+    HINSTANCE   hInstance;
+    LPCSTR      className;
+    LPCSTR      windowTitle;
+    DWORD       windowStyle;
+    WNDCLASS    wc;
+    HWND        hWnd;
+    HDC         hDC;
+    HGLRC       hRC;
     PIXELFORMATDESCRIPTOR pfd;
 #elif __linux__
     Display* display = nullptr;
@@ -58,5 +59,4 @@ private:
 #endif
     void eventLoop();
     void createGLWindow(const char * title, bool fullscreen);
-
 };

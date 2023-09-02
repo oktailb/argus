@@ -1,6 +1,6 @@
 #include "glwidget.h"
 
-void GLWidget::drawEditMode(PillowGraphy p, int sub, GLuint id, float level)
+void GLWidget::drawEditMode(PillowMesh p, int sub, GLuint id, float level)
 {
     t_Point                     mouseCoord;
 

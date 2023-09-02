@@ -279,21 +279,11 @@ void ArgusWindow::eventLoop()
         DispatchMessage(&msg);
     }
 #elif __linux__
-//    XGrabPointer(display,
-//                 window,
-//                 True,
-//                 PointerMotionMask | ButtonPressMask | ButtonReleaseMask,
-//                 GrabModeAsync,
-//                 GrabModeAsync,
-//                 None,
-//                 None,
-//                 CurrentTime);
     if (XPending(display))
     {
         XNextEvent(display, &event);
         switch (event.type)
         {
-            //                if (ready) resizeGL(newWidth, newHeight);
 
         case KeyPress:
         {
@@ -343,6 +333,7 @@ void ArgusWindow::eventLoop()
             break;
         }
     }
+
 #endif
 }
 

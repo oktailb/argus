@@ -1,6 +1,6 @@
 #include "glwidget.h"
 
-void GLWidget::calcPillow(PillowGraphy p, int sub, GLuint id, float level)
+void GLWidget::calcPillow(PillowMesh p, int sub, GLuint id, float level)
 {
     glBindTexture(GL_TEXTURE_2D, textureCurrent);
 
@@ -9,4 +9,5 @@ void GLWidget::calcPillow(PillowGraphy p, int sub, GLuint id, float level)
     glNewList(glListIndexPicture, GL_COMPILE);
     calcPillowRec(p, sub, id, level);
     glEndList();
+    edited = false;
 }
