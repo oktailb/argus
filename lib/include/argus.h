@@ -11,8 +11,16 @@
 #ifdef WIN32
 int main(int argc, char** argv);
 
-int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, char*, int nShowCmd)
+HINSTANCE   hInstance;
+HINSTANCE   hPrevInstance;
+int         nShowCmd;
+
+int __stdcall WinMain(HINSTANCE _hInstance, HINSTANCE _hPrevInstance, char*, int _nShowCmd)
 {
+    hInstance = _hInstance;
+    hPrevInstance = _hPrevInstance;
+    nShowCmd = _nShowCmd;
+
     return main(__argc, __argv);
 }
 #endif

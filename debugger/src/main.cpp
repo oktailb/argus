@@ -64,7 +64,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     return 0;
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+int main(int argc, char **argv) {
     // Enregistrement de la classe de la fenêtre
     const char className[] = "RGBAWindowClass";
     WNDCLASS wc = {};
@@ -93,7 +93,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     // Affichage de la fenêtre
-    ShowWindow(hwnd, nCmdShow);
+    ShowWindow(hwnd, nShowCmd);
     UpdateWindow(hwnd);
 
     // Boucle de messages

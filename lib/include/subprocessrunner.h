@@ -17,6 +17,7 @@ class SubProcessRunner
 {
 public:
     SubProcessRunner(const std::string& program, const std::string& desktop, int argc, char** argv);
+    ~SubProcessRunner();
     void runSubProcess();
     bool active();
 
@@ -31,5 +32,5 @@ private:
     DWORD               status;
 #elif __linux__
     pid_t               childPid;
-};
 #endif
+};

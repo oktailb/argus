@@ -12,8 +12,8 @@ public:
     ~ArgusWindow();
 
     void exec();
-
-private:
+    void paintGL() {glWidget->paintGL();}
+    void resizeGL(int width, int height) {glWidget->resizeGL(width, height);}
     void mousePressEvent(int button, int x, int y);
     void mouseMoveEvent(int x, int y);
     void mouseReleaseEvent(int button, int x, int y);
@@ -22,9 +22,9 @@ private:
 #endif
     void keyPressEvent(int key);
     void keyReleaseEvent(int key);
-    void resizeGL(int width, int height) {glWidget->resizeGL(width, height);}
-    void paintGL() {glWidget->paintGL();}
 
+
+private:
     std::map<std::string, std::string> configuration;
     int         fps;
     double      delayMs;
