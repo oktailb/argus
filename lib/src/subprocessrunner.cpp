@@ -9,6 +9,14 @@ SubProcessRunner::SubProcessRunner(const std::string& program, const std::string
     std::cerr << "Will run " << program << std::endl;
 }
 
+SubProcessRunner::~SubProcessRunner()
+{
+#ifdef WIN32
+    if (desktop.length() != 0)
+        restoreOriginalDesktop();
+#endif
+}
+
 #ifdef WIN32
 void SubProcessRunner::runSubProcess()
 {
@@ -40,11 +48,6 @@ bool SubProcessRunner::active()
     return (status == STILL_ACTIVE);
 }
 
-SubProcessRunner::~SubProcessRunner()
-{
-    if (desktop.length() != 0)
-        restoreOriginalDesktop();
-}
 #elif __linux__
 void SubProcessRunner::runSubProcess()
 {
