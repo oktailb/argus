@@ -16,7 +16,7 @@ endif(WIN32)
 
 
 set(PROJECT_SOURCES
-                                include/argus.h
+    src/argus.cpp               include/argus.h
                                 include/types.h
     src/shm.cpp                 include/shm.h
     src/desktop.cpp             include/desktop.h

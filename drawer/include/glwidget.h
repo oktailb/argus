@@ -7,19 +7,7 @@
 #include <map>
 #include <string>
 
-#ifdef WIN32
-#include <windows.h>
-#include <GL/wglext.h>
-#elif __linux__
-#include <X11/Xlib.h>
-#include <X11/X.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/XShm.h>
-#include <X11/Xlib.h>
-#include <GL/glx.h>
-#include "input.hpp"
-#endif
-
+#include "argus.h"
 #include "types.h"
 
 t_Point	calc_linear(t_Point P1, t_Point P2, t_Point P3);
