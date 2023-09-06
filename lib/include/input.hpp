@@ -73,6 +73,10 @@ private:
     double                                              delayMs;
     bool                                                videoSync;
     bool                                                stats;
+    int                                                 cropX;
+    int                                                 cropY;
+    int                                                 cropWidth;
+    int                                                 cropHeight;
 
 #ifdef WIN32
     bool                                                directX;

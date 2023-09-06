@@ -63,6 +63,10 @@ GLWidget::GLWidget(std::string filename)
     GLfloat g  = std::stod(configuration["Color/g"]);
     GLfloat b  = std::stod(configuration["Color/b"]);
 
+    cropX       = std::stoi(configuration["Cropping/x"]);
+    cropY       = std::stoi(configuration["Cropping/y"]);
+    cropWidth   = std::stoi(configuration["Cropping/width"]);
+    cropHeight  = std::stoi(configuration["Cropping/height"]);
 #ifdef WIN32
     header = (t_argusExchange*) getSHM(out0.c_str(), sizeof(*header));
     width = header->width;

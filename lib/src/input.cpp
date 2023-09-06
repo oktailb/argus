@@ -135,6 +135,11 @@ input::input(std::string filename)
     videoSync = (configuration["General/videoSync"].compare("true") == 0);
     stats = (configuration["General/stats"].compare("true") == 0);
 
+    cropX       = std::stoi(configuration["Cropping/x"]);
+    cropY       = std::stoi(configuration["Cropping/y"]);
+    cropWidth   = std::stoi(configuration["Cropping/width"]);
+    cropHeight  = std::stoi(configuration["Cropping/height"]);
+
     configureWindow();
 
     if (full)

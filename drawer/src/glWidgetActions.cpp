@@ -217,6 +217,11 @@ void GLWidget::save(std::string conf)
     configuration["General/videoSync"] = videoSync?"true":"false";
     configuration["General/stats"] = stats?"true":"false";
 
+    configuration["Cropping/x"] = std::to_string(cropX);
+    configuration["Cropping/y"] = std::to_string(cropY);
+    configuration["Cropping/width"] = std::to_string(cropWidth);
+    configuration["Cropping/height"] = std::to_string(cropHeight);
+
     saveConfiguration(configuration, filename);
 }
 

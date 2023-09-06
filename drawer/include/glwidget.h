@@ -147,6 +147,11 @@ private:
     int                         bitsPerPixel;
     int                         x;
     int                         y;
+
+    int                         cropX;
+    int                         cropY;
+    int                         cropWidth;
+    int                         cropHeight;
     /// raw image captured
     char *                      pixels;
     GLuint                      TextureID;
