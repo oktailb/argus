@@ -21,6 +21,7 @@ add_subdirectory(lib)
 add_subdirectory(capturer)
 add_subdirectory(drawer)
 add_subdirectory(debugger)
+add_subdirectory(injector)
 
 install(TARGETS ${PROJECT_NAME}Capturer
                 ${PROJECT_NAME}Drawer
