@@ -26,7 +26,7 @@ add_library(${PROJECT_NAME}_opengl
 )
 
 if (WIN32)
-    set(INJECTOR_DEPS)
+    set(INJECTOR_DEPS argus)
     set(INJECTOR_GLHOOK_DEPS opengl32 glu32 d3d9 d3dx9 dxgi)
 else()
     set(INJECTOR_GLHOOK_DEPS)

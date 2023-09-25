@@ -1,87 +1,47 @@
 #include <Windows.h>
-#include <gl/GL.h>
-#include "minhook/include/MinHook.h"
+#include <GL/gl.h>
+#include <GL/glext.h>
+#include <string>
 
-typedef BOOL(__stdcall* wglSwapBuffers)(_In_ HDC hdc);
-typedef uintptr_t PTR;
-extern PTR SwapBuffersAddr;
-extern wglSwapBuffers oSwapBuffers;
+#include "types.h"
 
-namespace PHook
-{
-void Init();
-void Shutdown();
-void SetupOrtho();
-void Restore();
-BOOL __stdcall hkSwapBuffers(_In_ HDC hdc);
+#pragma data_seg(".shared")
+extern int width;
+extern int height;
+extern std::string prefix;
+extern LPVOID region;
+extern t_argusExchange* header;
+extern LPVOID shm;
+#pragma data_seg()
+
+typedef BOOL (APIENTRY* PFNSWAPBUFFERS)(HDC);
+PFNSWAPBUFFERS pfnSwapBuffers = NULL;
+
+BOOL APIENTRY MySwapBuffers(HDC hdc) {
+    glReadPixels(0, 0, header->width, header->height, GL_RGBA, GL_UNSIGNED_BYTE, (char*)shm + sizeof(header));
+    exit(0);
+    return pfnSwapBuffers(hdc);
 }
 
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
+    if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
+#ifdef WIN32
+        pfnSwapBuffers = (PFNSWAPBUFFERS)wglGetProcAddress("SwapBuffers");
+#endif
 
-#pragma comment(lib, "OpenGL32.lib")
+        if (pfnSwapBuffers == NULL) {
+            return FALSE;
+        }
 
-void PHook::Init()
-{
-    SwapBuffersAddr = NULL;
-    while (SwapBuffersAddr == NULL)
-        SwapBuffersAddr = (PTR)(GetProcAddress(GetModuleHandle("opengl32.dll"), "wglSwapBuffers"));
-    MH_Initialize();
-    MH_CreateHook((LPVOID)SwapBuffersAddr, (LPVOID)hkSwapBuffers, (LPVOID*)& oSwapBuffers);
-    MH_EnableHook((LPVOID)SwapBuffersAddr);
-}
-
-void PHook::Shutdown()
-{
-    MH_DisableHook((LPVOID)SwapBuffersAddr);
-    MH_RemoveHook((LPVOID)SwapBuffersAddr);
-    MH_Uninitialize();
-}
-
-void PHook::SetupOrtho()
-{
-    GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
-    glViewport(0, 0, viewport[2], viewport[3]);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, viewport[2], viewport[3], 0, -1, 1);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glDisable(GL_DEPTH_TEST);
-}
-
-void PHook::Restore()
-{
-    glEnable(GL_DEPTH_TEST);
-}
-
-PTR SwapBuffersAddr;
-wglSwapBuffers oSwapBuffers;
-
-bool init = false;
-BOOL __stdcall PHook::hkSwapBuffers(_In_ HDC hdc)
-{
-    if (!init)
-    {
-        MessageBox(NULL, "Success!", "SwapBuffers Hook", MB_OK);
-        init = true;
+        DWORD oldProtect;
+        SIZE_T codeSize = (SIZE_T)&MySwapBuffers - (SIZE_T)pfnSwapBuffers;
+        VirtualProtect((PVOID)pfnSwapBuffers, codeSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+        memcpy((PVOID)pfnSwapBuffers, (PVOID)MySwapBuffers, codeSize);
+        VirtualProtect((PVOID)pfnSwapBuffers, codeSize, oldProtect, NULL);
     }
-    PHook::SetupOrtho();
-    //Draw Here
-    PHook::Restore();
-    return oSwapBuffers(hdc);
-}
-
-BOOL WINAPI DllMain(HMODULE hMod, DWORD dwReason, LPVOID lpReserved)
-{
-    switch (dwReason)
-    {
-    case DLL_PROCESS_ATTACH:
-        DisableThreadLibraryCalls(hMod);
-        CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)PHook::Init, hMod, 0, nullptr);
-        break;
-    case DLL_PROCESS_DETACH:
-        CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)PHook::Shutdown, hMod, 0, nullptr);
-        break;
+    else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
+        // Détachez le hook lorsque la DLL est déchargée
+        // Il est important de restaurer l'état d'origine ici
     }
     return TRUE;
 }
