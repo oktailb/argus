@@ -80,15 +80,7 @@ ConfigLoadResult loadConfig(const std::string& filename, ArgusConfig& out) {
         result.error = "Impossible d'ouvrir ou lire le fichier: " + filename;
         return result;
     }
-    for(auto s : m) {
-        std::cout << "[Config] " << s.first << " = ";
-        for (char c : s.second) {
-            if (std::isprint(c)) std::cout << c;
-            else std::cout << "\\x" << std::hex << (int)(unsigned char)c << std::dec;
-        }
-        std::cout << std::endl;
-    }  
-
+    
     // --- General ---
     out.general.child        = getOrDefault(m, "General/Child", out.general.child);
     out.general.prefix       = getOrDefault(m, "General/Prefix", out.general.prefix);
