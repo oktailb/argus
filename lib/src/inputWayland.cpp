@@ -38,11 +38,19 @@ InputWayland::InputWayland() : width(0), height(0) {
     session_handle = nullptr;
     pipewire_node_id = 0;
     pipewire_fd = -1;
+    has_dmabuf = false;
 #endif
 }
 
 InputWayland::~InputWayland() {
 #ifdef ENABLE_WAYLAND
+    // Clean up DMABuf FD if owned
+    if (current_dmabuf.valid && current_dmabuf.fd >= 0) {
+        close(current_dmabuf.fd);
+        current_dmabuf.fd = -1;
+        current_dmabuf.valid = false;
+    }
+    
     if (stream) {
         pw_stream_destroy(stream);
         stream = nullptr;
@@ -470,20 +478,32 @@ void on_process(void *userdata) {
     struct spa_buffer *spa_buf = buf->buffer;
     struct spa_data *d = &spa_buf->datas[0];
     
+    // Debug: log data type every 60 frames
+    static int frame_count = 0;
+    bool should_log = (frame_count++ % 60 == 0);
+    
+    if (should_log) {
+        std::cerr << "[Frame " << frame_count << "] Data type: " << d->type 
+                  << " (MemPtr=1, MemFd=2, DmaBuf=3), FD=" << d->fd << std::endl;
+    }
+    
     if (d->type == SPA_DATA_MemPtr && d->data) {
         // CPU copy fallback - direct memory pointer
+        if (should_log) {
+            std::cerr << "  -> Using MemPtr (CPU copy)" << std::endl;
+        }
         size_t size = d->chunk->size;
         if (self->data.size() != size) {
             self->data.resize(size);
         }
         memcpy(self->data.data(), d->data, size);
+        self->has_dmabuf = false;  // Not using DMABuf
         
-        static int frame_count = 0;
-        if (frame_count++ % 60 == 0) {
-            std::cerr << "Frame received (MemPtr): " << size << " bytes" << std::endl;
-        }
     } else if (d->type == SPA_DATA_MemFd) {
         // Memory file descriptor - need to map it
+        if (should_log) {
+            std::cerr << "  -> Using MemFd (mmap copy)" << std::endl;
+        }
         size_t size = d->chunk->size;
         size_t offset = d->chunk->offset;
         
@@ -496,11 +516,6 @@ void on_process(void *userdata) {
                 }
                 memcpy(self->data.data(), (uint8_t*)mapped + offset, size);
                 munmap(mapped, d->maxsize);
-                
-                static int frame_count = 0;
-                if (frame_count++ % 60 == 0) {
-                    std::cerr << "Frame received (MemFd): " << size << " bytes" << std::endl;
-                }
             } else {
                 static bool logged = false;
                 if (!logged) {
@@ -509,19 +524,52 @@ void on_process(void *userdata) {
                 }
             }
         }
+        self->has_dmabuf = false;  // Not using DMABuf
+        
     } else if (d->type == SPA_DATA_DmaBuf) {
-        // DMABuf path - TODO Phase 3
-        static bool logged = false;
-        if (!logged) {
-            std::cerr << "DMABuf not yet implemented, frame skipped" << std::endl;
-            logged = true;
+        // DMABuf path - extract FD and metadata
+        std::cerr << "  -> DMABuf detected! FD=" << d->fd << std::endl;
+        
+        if (d->fd >= 0) {
+            // Clean up previous DMABuf if any
+            if (self->current_dmabuf.valid && self->current_dmabuf.fd >= 0) {
+                close(self->current_dmabuf.fd);
+            }
+            
+            // Duplicate the FD so we own it (PipeWire will close the original)
+            self->current_dmabuf.fd = dup(d->fd);
+            self->current_dmabuf.width = self->width;
+            self->current_dmabuf.height = self->height;
+            
+            // Extract stride from chunk or calculate default
+            if (d->chunk->stride > 0) {
+                self->current_dmabuf.stride = d->chunk->stride;
+            } else {
+                // Fallback: assume BGRA (4 bytes per pixel)
+                self->current_dmabuf.stride = self->width * 4;
+            }
+            
+            // Format and modifier extraction
+            self->current_dmabuf.format = 0x34325241; // DRM_FORMAT_ARGB8888
+            self->current_dmabuf.modifier = 0;
+            
+            self->current_dmabuf.valid = true;
+            self->has_dmabuf = true;
+            
+            std::cerr << "  -> DMABuf configured: FD=" << self->current_dmabuf.fd 
+                      << ", " << self->width << "x" << self->height 
+                      << ", stride=" << self->current_dmabuf.stride 
+                      << ", has_dmabuf=true" << std::endl;
+        } else {
+            std::cerr << "  -> DMABuf has invalid FD!" << std::endl;
+            self->has_dmabuf = false;
         }
+        
     } else {
-        static bool logged = false;
-        if (!logged) {
-            std::cerr << "Unknown data type: " << d->type << std::endl;
-            logged = true;
+        if (should_log) {
+            std::cerr << "  -> Unknown data type: " << d->type << std::endl;
         }
+        self->has_dmabuf = false;
     }
     
     pw_stream_queue_buffer(self->stream, buf);
@@ -568,11 +616,12 @@ bool InputWayland::createStream() {
         return false;
     }
     
-    // Build format parameters
-    uint8_t buffer[1024];
+    // Build format parameters and buffer data type
+    uint8_t buffer[2048];  // Increased size for multiple params
     struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
-    const struct spa_pod *params[1];
+    const struct spa_pod *params[2];  // Format + Buffers
     
+    // Param 0: EnumFormat (video format)
     params[0] = (const struct spa_pod*)spa_pod_builder_add_object(&b,
         SPA_TYPE_OBJECT_Format, SPA_PARAM_EnumFormat,
         SPA_FORMAT_mediaType, SPA_POD_Id(SPA_MEDIA_TYPE_video),
@@ -583,15 +632,23 @@ bool InputWayland::createStream() {
             SPA_VIDEO_FORMAT_RGB)
     );
     
-    // Connect to the PipeWire node
+    // Param 1: Buffers - request DMABuf data type
+    params[1] = (const struct spa_pod*)spa_pod_builder_add_object(&b,
+        SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers,
+        SPA_PARAM_BUFFERS_dataType, SPA_POD_CHOICE_FLAGS_Int((1 << SPA_DATA_DmaBuf) | (1 << SPA_DATA_MemFd))
+    );
+    
+    std::cerr << "Requesting DMABuf data type (with MemFd fallback)" << std::endl;
+    
+    // Connect to the PipeWire node WITHOUT MAP_BUFFERS flag
     int res = pw_stream_connect(stream,
         PW_DIRECTION_INPUT,
         pipewire_node_id,
         (enum pw_stream_flags)(
-            PW_STREAM_FLAG_AUTOCONNECT |
-            PW_STREAM_FLAG_MAP_BUFFERS
+            PW_STREAM_FLAG_AUTOCONNECT
+            // Removed PW_STREAM_FLAG_MAP_BUFFERS to allow DMABuf
         ),
-        params, 1);
+        params, 2);  // Now passing 2 params instead of 1
     
     if (res < 0) {
         std::cerr << "Failed to connect stream: " << spa_strerror(res) << std::endl;
@@ -613,4 +670,21 @@ int InputWayland::getWidth() const {
 
 int InputWayland::getHeight() const {
     return height;
+}
+
+bool InputWayland::hasDMABuf() const {
+#ifdef ENABLE_WAYLAND
+    return has_dmabuf && current_dmabuf.valid;
+#else
+    return false;
+#endif
+}
+
+const DMABufFrame& InputWayland::getDMABuf() const {
+#ifdef ENABLE_WAYLAND
+    return current_dmabuf;
+#else
+    static DMABufFrame dummy;
+    return dummy;
+#endif
 }

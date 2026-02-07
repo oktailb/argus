@@ -2,6 +2,21 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
+
+// DMABuf frame information - defined outside ifdef for header visibility
+struct DMABufFrame {
+    int fd;           // File descriptor (owned, will be closed)
+    uint32_t width;
+    uint32_t height;
+    uint32_t stride;
+    uint32_t format;  // DRM fourcc format
+    uint64_t modifier;
+    bool valid;
+    
+    DMABufFrame() : fd(-1), width(0), height(0), stride(0), 
+                    format(0), modifier(0), valid(false) {}
+};
 
 #ifdef ENABLE_WAYLAND
 #include <pipewire/pipewire.h>
@@ -20,6 +35,10 @@ public:
     const unsigned char* getData() const;
     int getWidth() const;
     int getHeight() const;
+    
+    // DMABuf access
+    bool hasDMABuf() const;
+    const DMABufFrame& getDMABuf() const;
 
 private:
 #ifdef ENABLE_WAYLAND
@@ -46,4 +65,10 @@ private:
     int width;
     int height;
     std::vector<unsigned char> data;
+    
+#ifdef ENABLE_WAYLAND
+    // DMABuf frame data
+    DMABufFrame current_dmabuf;
+    bool has_dmabuf;
+#endif
 };
