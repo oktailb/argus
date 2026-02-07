@@ -11,6 +11,7 @@
 
 #include "shm.h"
 #include "configuration.h"
+#include "argusConfig.h"
 
 #ifdef __linux__
 #include "input.hpp"
@@ -251,20 +252,21 @@ ArgusWindow::ArgusWindow(std::string filename)
     :
     filename(filename)
 {
-    configuration = readConfiguration(filename);
+    argus::ArgusConfig config;
+    argus::loadConfig(filename, config);
     shiftPressed = false;
     ctrlPressed = false;
     inMove = false;
-    fullscreen = (configuration["General/virtualDesktop"].compare("true") == 0);
+    fullscreen = config.general.virtualDesktop;
     glWidget = new GLWidget(filename);
 #ifdef __linux__
     width = glWidget->getCapturer()->getWidth();
     height = glWidget->getCapturer()->getHeight();
 #endif
-    fps = std::stoi(configuration["General/fps"]);
+    fps = config.general.fps;
     delayMs = 1000.0f / fps;
-    videoSync = (configuration["General/videoSync"].compare("true") == 0);
-    stats = (configuration["General/stats"].compare("true") == 0);
+    videoSync = config.general.videoSync;
+    stats = config.general.stats;
 }
 
 void ArgusWindow::eventLoop()

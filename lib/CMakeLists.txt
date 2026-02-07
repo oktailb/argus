@@ -1,6 +1,12 @@
-cmake_minimum_required(VERSION 3.10)
-
 project(argus VERSION 00.01.00 LANGUAGES CXX)
+
+find_package(PkgConfig QUIET)
+if (PKG_CONFIG_FOUND)
+    pkg_check_modules(PIPEWIRE libpipewire-0.3)
+    if (PIPEWIRE_FOUND)
+        add_definitions(-DENABLE_WAYLAND)
+    endif()
+endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -21,6 +27,7 @@ set(PROJECT_SOURCES
     src/shm.cpp                 include/shm.h
     src/desktop.cpp             include/desktop.h
     src/configuration.cpp       include/configuration.h
+    src/argusConfig.cpp         include/argusConfig.h
     src/webServer.cpp           include/webServer.h
     src/webRenderer.cpp         include/webRenderer.h
     src/subprocessrunner.cpp    include/subprocessrunner.h
@@ -28,6 +35,7 @@ set(PROJECT_SOURCES
     src/inputGDI.cpp
     src/inputDirectX.cpp
     src/inputXorg.cpp
+    src/inputWayland.cpp        include/inputWayland.hpp
 )
 
 add_library(${PROJECT_NAME}
@@ -38,5 +46,11 @@ if (WIN32)
 else()
     set(ARGUS_DEPS GL GLU X11 Xext Xrandr)
 endif(WIN32)
+
+if (PIPEWIRE_FOUND)
+    list(APPEND ARGUS_DEPS ${PIPEWIRE_LIBRARIES})
+    include_directories(${PIPEWIRE_INCLUDE_DIRS})
+endif()
+
 target_link_libraries(${PROJECT_NAME} ${ARGUS_DEPS})
 include_directories(${CMAKE_SOURCE_DIR}/include include)

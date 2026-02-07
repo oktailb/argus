@@ -1,4 +1,30 @@
 #include "configuration.h"
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+namespace {
+
+/** Enlève \r et \n en fin de ligne (fichiers Windows / anciens Mac). */
+void trimLineEnd(std::string& s) {
+    s.erase(std::find(s.begin(), s.end(), '\0'), s.end());
+    while (!s.empty() && (s.back() == '\r' || s.back() == '\n'))
+        s.pop_back();
+}
+
+/** Enlève espaces et \r\n en début et fin. */
+void trimKeyValue(std::string& s) {
+    trimLineEnd(s);
+    while (!s.empty() && (std::isspace(static_cast<unsigned char>(s.back())) || s.back() == '\r'))
+        s.pop_back();
+    size_t start = 0;
+    while (start < s.size() && std::isspace(static_cast<unsigned char>(s[start])))
+        ++start;
+    if (start > 0)
+        s = s.substr(start);
+}
+
+} // namespace
 
 std::map<std::string, std::string> readConfiguration(const std::string& filename)
 {
@@ -6,7 +32,6 @@ std::map<std::string, std::string> readConfiguration(const std::string& filename
     std::ifstream file(filename);
 
     if (!file.is_open()) {
-        // Gérer l'erreur si le fichier ne peut pas être ouvert
         return keyValuePairs;
     }
 
@@ -14,20 +39,23 @@ std::map<std::string, std::string> readConfiguration(const std::string& filename
     std::string currentSection = "";
 
     while (std::getline(file, line)) {
-        // Si la ligne est vide ou commence par ';', c'est un commentaire, on la ignore
+        // Sanitize: Remove null bytes if any
+        line.erase(std::remove(line.begin(), line.end(), '\0'), line.end());
+        trimLineEnd(line);
         if (line.empty() || line[0] == ';') {
             continue;
         }
 
-        // Vérifier si la ligne est une section
         if (line[0] == '[' && line.back() == ']') {
             currentSection = line.substr(1, line.size() - 2);
+            trimKeyValue(currentSection);
         } else {
-            // Sinon, c'est une clé/valeur
             std::size_t separatorPos = line.find('=');
             if (separatorPos != std::string::npos) {
                 std::string key = line.substr(0, separatorPos);
                 std::string value = line.substr(separatorPos + 1);
+                trimKeyValue(key);
+                trimKeyValue(value);
                 keyValuePairs[currentSection + "/" + key] = value;
             }
         }

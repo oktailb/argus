@@ -7,25 +7,27 @@
 #include "shm.h"
 #include "resources.h"
 #include "configuration.h"
+#include "argusConfig.h"
 
 GLWidget::GLWidget(std::string filename)
     : filename(filename)
 {
-    configuration = readConfiguration(filename);
+    argus::ArgusConfig config;
+    argus::ConfigLoadResult loadResult = argus::loadConfig(filename, config);
 #ifdef WIN32
-    virtualDesktop = (configuration["General/virtualDesktop"] == "true");
+    virtualDesktop = config.general.virtualDesktop;
 #elif __linux__
     capturer = new input(filename);
     width = capturer->getWidth();
     height = capturer->getHeight();
 #endif
-    videoSync = (configuration["General/videoSync"] == "true");
-    stats = (configuration["General/stats"] == "true");
-    fps = (stoi(configuration["General/fps"]));
+    videoSync = config.general.videoSync;
+    stats = config.general.stats;
+    fps = config.general.fps;
 
-    prefix = configuration["General/Prefix"];
-    child = configuration["General/Child"];
-    title = configuration["General/title"];
+    prefix = config.general.prefix;
+    child = config.general.child;
+    title = config.general.title;
 
     std::string out0 = prefix + " Argus SharedMemory";
 
@@ -36,37 +38,35 @@ GLWidget::GLWidget(std::string filename)
     edited   = false;
 
     Zlevel = 1;
-    std::cerr << configuration["General/PillowRec"] << std::endl;
-    std::cerr << configuration["General/QuadRec"] << std::endl;
-    recursionLevel = std::stoi(configuration["General/PillowRec"]);
-    quadLevel = std::stoi(configuration["General/QuadRec"]);
-    t_Point N  = {std::stod(configuration["Geometry/Nx"]) , std::stod(configuration["Geometry/Ny"])};
-    t_Point S  = {std::stod(configuration["Geometry/Sx"]) , std::stod(configuration["Geometry/Sy"])};
-    t_Point E  = {std::stod(configuration["Geometry/Ex"]) , std::stod(configuration["Geometry/Ey"])};
-    t_Point W  = {std::stod(configuration["Geometry/Wx"]) , std::stod(configuration["Geometry/Wy"])};
-    t_Point SE = {std::stod(configuration["Geometry/SEx"]), std::stod(configuration["Geometry/SEy"])};
-    t_Point NE = {std::stod(configuration["Geometry/NEx"]), std::stod(configuration["Geometry/NEy"])};
-    t_Point NW = {std::stod(configuration["Geometry/NWx"]), std::stod(configuration["Geometry/NWy"])};
-    t_Point SW = {std::stod(configuration["Geometry/SWx"]), std::stod(configuration["Geometry/SWy"])};
-    t_Point C  = {std::stod(configuration["Geometry/Cx"]) , std::stod(configuration["Geometry/Cy"])};
-    GLfloat Na  = std::stod(configuration["Blending/Na"]);
-    GLfloat Sa  = std::stod(configuration["Blending/Sa"]);
-    GLfloat Ea  = std::stod(configuration["Blending/Ea"]);
-    GLfloat Wa  = std::stod(configuration["Blending/Wa"]);
-    GLfloat SEa = std::stod(configuration["Blending/SEa"]);
-    GLfloat NEa = std::stod(configuration["Blending/NEa"]);
-    GLfloat NWa = std::stod(configuration["Blending/NWa"]);
-    GLfloat SWa = std::stod(configuration["Blending/SWa"]);
-    GLfloat Ca  = std::stod(configuration["Blending/Ca"]);
+    recursionLevel = config.general.pillowRec;
+    quadLevel = config.general.quadRec;
+    t_Point N  = {config.geometry.Nx , config.geometry.Ny };
+    t_Point S  = {config.geometry.Sx , config.geometry.Sy };
+    t_Point E  = {config.geometry.Ex , config.geometry.Ey };
+    t_Point W  = {config.geometry.Wx , config.geometry.Wy };
+    t_Point SE = {config.geometry.SEx, config.geometry.SEy};
+    t_Point NE = {config.geometry.NEx, config.geometry.NEy};
+    t_Point NW = {config.geometry.NWx, config.geometry.NWy};
+    t_Point SW = {config.geometry.SWx, config.geometry.SWy};
+    t_Point C  = {config.geometry.Cx , config.geometry.Cy };
+    GLfloat Na  = static_cast<GLfloat>(config.blending.Na);
+    GLfloat Sa  = static_cast<GLfloat>(config.blending.Sa);
+    GLfloat Ea  = static_cast<GLfloat>(config.blending.Ea);
+    GLfloat Wa  = static_cast<GLfloat>(config.blending.Wa);
+    GLfloat SEa = static_cast<GLfloat>(config.blending.SEa);
+    GLfloat NEa = static_cast<GLfloat>(config.blending.NEa);
+    GLfloat NWa = static_cast<GLfloat>(config.blending.NWa);
+    GLfloat SWa = static_cast<GLfloat>(config.blending.SWa);
+    GLfloat Ca  = static_cast<GLfloat>(config.blending.Ca);
 
-    GLfloat r  = std::stod(configuration["Color/r"]);
-    GLfloat g  = std::stod(configuration["Color/g"]);
-    GLfloat b  = std::stod(configuration["Color/b"]);
+    GLfloat r  = static_cast<GLfloat>(config.color.r);
+    GLfloat g  = static_cast<GLfloat>(config.color.g);
+    GLfloat b  = static_cast<GLfloat>(config.color.b);
 
-    cropX       = std::stoi(configuration["Cropping/x"]);
-    cropY       = std::stoi(configuration["Cropping/y"]);
-    cropWidth   = std::stoi(configuration["Cropping/width"]);
-    cropHeight  = std::stoi(configuration["Cropping/height"]);
+    cropX       = config.cropping.x;
+    cropY       = config.cropping.y;
+    cropWidth   = config.cropping.width;
+    cropHeight  = config.cropping.height;
 #ifdef WIN32
     header = (t_argusExchange*) getSHM(out0.c_str(), sizeof(*header));
     width = header->width;
@@ -112,7 +112,7 @@ GLWidget::GLWidget(std::string filename)
         r,g,b,
         1.0, 1.0
     };
-    smoothLen =  std::stof(configuration["General/SmoothLen"]);
+    smoothLen = config.general.smoothLen;
     ramp = smoothLen;
     aramp = 1.0f - smoothLen;
 
@@ -187,7 +187,19 @@ void GLWidget::updateTextureFromSharedMemory(char *data) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
 #elif __linux__
     capturer->shoot();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, capturer->getXimg()->data);
+    input::CaptureBuffer buf = capturer->getCaptureBuffer();
+    bool haveData = false;
+    if (buf.data && buf.width > 0 && buf.height > 0) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buf.width, buf.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, buf.data);
+        haveData = true;
+    } else if (capturer->getXimg() && width > 0 && height > 0) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, capturer->getXimg()->data);
+        haveData = true;
+    }
+    if (!haveData) {
+        glBindTexture(GL_TEXTURE_2D, 0);
+        return;
+    }
 #endif
     GLERR;
     glGenerateMipmap(GL_TEXTURE_2D);

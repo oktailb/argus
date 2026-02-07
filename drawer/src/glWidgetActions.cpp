@@ -1,5 +1,6 @@
 #include "glwidget.h"
 #include "configuration.h"
+#include "argusConfig.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -171,58 +172,54 @@ void GLWidget::adjustB(bool way)
 
 void GLWidget::save(std::string conf)
 {
-    configuration["Geometry/Sx"]  = std::to_string(pillowModel.points[Up]    [Center].x);
-    configuration["Geometry/Sy"]  = std::to_string(pillowModel.points[Up]    [Center].y);
-    configuration["Geometry/Nx"]  = std::to_string(pillowModel.points[Down]  [Center].x);
-    configuration["Geometry/Ny"]  = std::to_string(pillowModel.points[Down]  [Center].y);
-    configuration["Geometry/Wx"]  = std::to_string(pillowModel.points[Middle][Left].x);
-    configuration["Geometry/Wy"]  = std::to_string(pillowModel.points[Middle][Left].y);
-    configuration["Geometry/Ex"]  = std::to_string(pillowModel.points[Middle][Right].x);
-    configuration["Geometry/Ey"]  = std::to_string(pillowModel.points[Middle][Right].y);
-    configuration["Geometry/SWx"] = std::to_string(pillowModel.points[Up]    [Left].x);
-    configuration["Geometry/SWy"] = std::to_string(pillowModel.points[Up]    [Left].y);
-    configuration["Geometry/NWx"] = std::to_string(pillowModel.points[Down]  [Left].x);
-    configuration["Geometry/NWy"] = std::to_string(pillowModel.points[Down]  [Left].y);
-    configuration["Geometry/SEx"] = std::to_string(pillowModel.points[Up]    [Right].x);
-    configuration["Geometry/SEy"] = std::to_string(pillowModel.points[Up]    [Right].y);
-    configuration["Geometry/NEx"] = std::to_string(pillowModel.points[Down]  [Right].x);
-    configuration["Geometry/NEy"] = std::to_string(pillowModel.points[Down]  [Right].y);
-    configuration["Geometry/Cx"]  = std::to_string(pillowModel.points[Middle][Center].x);
-    configuration["Geometry/Cy"]  = std::to_string(pillowModel.points[Middle][Center].y);
-
-    configuration["Blending/Na"]  = std::to_string(pillowModel.alpha[Down]  [Center]);
-    configuration["Blending/Sa"]  = std::to_string(pillowModel.alpha[Up]    [Center]);
-    configuration["Blending/Ea"]  = std::to_string(pillowModel.alpha[Middle][Right]);
-    configuration["Blending/Wa"]  = std::to_string(pillowModel.alpha[Middle][Left]);
-    configuration["Blending/NEa"]  = std::to_string(pillowModel.alpha[Down] [Right]);
-    configuration["Blending/SEa"]  = std::to_string(pillowModel.alpha[Up]   [Right]);
-    configuration["Blending/NWa"]  = std::to_string(pillowModel.alpha[Down] [Left]);
-    configuration["Blending/SWa"]  = std::to_string(pillowModel.alpha[Up]   [Left]);
-    configuration["Blending/Ca"]  = std::to_string(pillowModel.alpha[Middle][Center]);
-
-    configuration["Color/r"]  = std::to_string(pillowModel.r);
-    configuration["Color/g"]  = std::to_string(pillowModel.g);
-    configuration["Color/b"]  = std::to_string(pillowModel.b);
-
-    configuration["General/PillowRec"] = std::to_string(recursionLevel);
-    configuration["General/Child"] = child;
-    configuration["General/Prefix"] = prefix;
-    configuration["General/QuadRec"] = std::to_string(quadLevel);
-    configuration["General/SmoothLen"] = std::to_string(pillowModel.SmoothLen);
-    configuration["General/title"] = title;
+    argus::ArgusConfig c;
+    c.general.child = child;
+    c.general.prefix = prefix;
+    c.general.title = title;
+    c.general.pillowRec = recursionLevel;
+    c.general.quadRec = quadLevel;
+    c.general.smoothLen = static_cast<float>(pillowModel.SmoothLen);
+    c.general.fps = fps;
+    c.general.videoSync = videoSync;
+    c.general.stats = stats;
 #ifdef WIN32
-    configuration["General/virtualDesktop"] = virtualDesktop?"true":"false";
+    c.general.virtualDesktop = virtualDesktop;
 #endif
-    configuration["General/fps"] = std::to_string(fps);
-    configuration["General/videoSync"] = videoSync?"true":"false";
-    configuration["General/stats"] = stats?"true":"false";
-
-    configuration["Cropping/x"] = std::to_string(cropX);
-    configuration["Cropping/y"] = std::to_string(cropY);
-    configuration["Cropping/width"] = std::to_string(cropWidth);
-    configuration["Cropping/height"] = std::to_string(cropHeight);
-
-    saveConfiguration(configuration, filename);
+    c.geometry.Nx  = pillowModel.points[Down]  [Center].x;
+    c.geometry.Ny  = pillowModel.points[Down]  [Center].y;
+    c.geometry.Sx  = pillowModel.points[Up]    [Center].x;
+    c.geometry.Sy  = pillowModel.points[Up]    [Center].y;
+    c.geometry.Wx  = pillowModel.points[Middle][Left].x;
+    c.geometry.Wy  = pillowModel.points[Middle][Left].y;
+    c.geometry.Ex  = pillowModel.points[Middle][Right].x;
+    c.geometry.Ey  = pillowModel.points[Middle][Right].y;
+    c.geometry.SWx = pillowModel.points[Up]    [Left].x;
+    c.geometry.SWy = pillowModel.points[Up]    [Left].y;
+    c.geometry.NWx = pillowModel.points[Down]  [Left].x;
+    c.geometry.NWy = pillowModel.points[Down]  [Left].y;
+    c.geometry.SEx = pillowModel.points[Up]    [Right].x;
+    c.geometry.SEy = pillowModel.points[Up]    [Right].y;
+    c.geometry.NEx = pillowModel.points[Down]  [Right].x;
+    c.geometry.NEy = pillowModel.points[Down]  [Right].y;
+    c.geometry.Cx  = pillowModel.points[Middle][Center].x;
+    c.geometry.Cy  = pillowModel.points[Middle][Center].y;
+    c.blending.Na  = pillowModel.alpha[Down]  [Center];
+    c.blending.Sa  = pillowModel.alpha[Up]    [Center];
+    c.blending.Ea  = pillowModel.alpha[Middle][Right];
+    c.blending.Wa  = pillowModel.alpha[Middle][Left];
+    c.blending.NEa = pillowModel.alpha[Down] [Right];
+    c.blending.SEa = pillowModel.alpha[Up]   [Right];
+    c.blending.NWa = pillowModel.alpha[Down] [Left];
+    c.blending.SWa = pillowModel.alpha[Up]   [Left];
+    c.blending.Ca  = pillowModel.alpha[Middle][Center];
+    c.color.r = pillowModel.r;
+    c.color.g = pillowModel.g;
+    c.color.b = pillowModel.b;
+    c.cropping.x = cropX;
+    c.cropping.y = cropY;
+    c.cropping.width = cropWidth;
+    c.cropping.height = cropHeight;
+    argus::saveConfig(filename, c);
 }
 
 void GLWidget::selectPoint(int id)

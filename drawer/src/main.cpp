@@ -9,6 +9,7 @@
 
 #include "window.h"
 #include "configuration.h"
+#include "argusConfig.h"
 #include "resources.h"
 #include "argus.h"
 
@@ -52,9 +53,10 @@ int main(int argc, char *argv[])
 {
     usage(argc, argv);
 
-    std::map<std::string, std::string> configuration = readConfiguration(argv[1]);
-
-    webServer *srv = new webServer(configuration["General/webServerInterface"], std::stoi(configuration["General/webServerPort"]));
+    argus::ArgusConfig config;
+    if (!argus::loadConfig(argv[1], config).ok)
+        config = argus::ArgusConfig();
+    webServer *srv = new webServer(config.general.webServerInterface, config.general.webServerPort);
     ArgusWindow w(argv[1]);
 
     srv->addResource("/ajaxlib.js"  , new ajaxLibRenderer(std::string("text/javascript"), srv));

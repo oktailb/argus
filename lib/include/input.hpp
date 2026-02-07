@@ -37,6 +37,7 @@
 #include <X11/extensions/XShm.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include "inputWayland.hpp"
 #endif
 #include <iostream>
 #include <vector>
@@ -59,6 +60,9 @@ public:
     int getHeight() const;
 #ifdef __linux__
     XImage *getXimg() const;
+    /** Buffer de capture (X11 ou Wayland). data peut être nullptr si pas encore de frame. */
+    struct CaptureBuffer { const unsigned char* data; int width; int height; };
+    CaptureBuffer getCaptureBuffer() const;
 #endif
 
 private:
@@ -134,6 +138,8 @@ private:
     void listDisplay(std::map<std::string, Window> &listOut);
     Window windowFromNameSearch(Display *display, Window current, char const *needle);
     Window windowFromPidSearch(Display *display, Window current, unsigned long  _pid);
+    InputWayland *waylandCapturer;
+    bool useWayland{false};
 #endif
     t_argusExchange     *header;
 };

@@ -1,6 +1,7 @@
 #include <input.hpp>
 #include "shm.h"
 #include "configuration.h"
+#include "argusConfig.h"
 #include "types.h"
 #include <iostream>
 #include <stdio.h>
@@ -105,8 +106,11 @@ void input::configureWindow()
             {
                 hWnd = it->second;
                 title = it->first;
-                configuration["General/title"] = it->first;
-                saveConfiguration(configuration, filename);
+                argus::ArgusConfig cfg;
+                if (argus::loadConfig(filename, cfg).ok) {
+                    cfg.general.title = title;
+                    argus::saveConfig(filename, cfg);
+                }
                 break;
             }
             it++;
@@ -122,23 +126,23 @@ input::input(std::string filename)
     :
       filename(filename)
 {
-    bool res;
+    argus::ArgusConfig config;
+    argus::loadConfig(filename, config);
 
-    configuration = readConfiguration(filename);
-    title = configuration["General/title"];
-    std::string method = configuration["General/method"];
+    title = config.general.title;
+    std::string method = config.general.captureMethod;
     full = (title.compare("full") == 0);
     directX = (method.compare("directx") == 0);
     gdi = (method.compare("gdi") == 0);
-    fps = std::stoi(configuration["General/fps"]);
+    fps = config.general.fps;
     delayMs = 1000.0f / fps;
-    videoSync = (configuration["General/videoSync"].compare("true") == 0);
-    stats = (configuration["General/stats"].compare("true") == 0);
+    videoSync = config.general.videoSync;
+    stats = config.general.stats;
 
-    cropX       = std::stoi(configuration["Cropping/x"]);
-    cropY       = std::stoi(configuration["Cropping/y"]);
-    cropWidth   = std::stoi(configuration["Cropping/width"]);
-    cropHeight  = std::stoi(configuration["Cropping/height"]);
+    cropX       = config.cropping.x;
+    cropY       = config.cropping.y;
+    cropWidth   = config.cropping.width;
+    cropHeight  = config.cropping.height;
 
     configureWindow();
 
@@ -171,7 +175,7 @@ input::input(std::string filename)
     }
     if (directX) initDirectX(hWnd);
 
-    std::string out0 = configuration["General/Prefix"] + " Argus SharedMemory";
+    std::string out0 = config.general.prefix + " Argus SharedMemory";
 
     const int SHM_SIZE = 2 * (width*height*4) + sizeof(*header);
 
@@ -481,41 +485,33 @@ void input::configure()
     display = XOpenDisplay(":0");
     if (display == NULL)
     {
-        listDisplay(list);
+        // listDisplay(list); // Avoid listing if we aren't going to ask the user
+        std::cerr << "Failed to open X display ':0'" << std::endl;
         exit(EXIT_FAILURE);
     }
+    
+    // Attempt to find the window by title
     root = windowFromNameSearch(display, XDefaultRootWindow(display), title.c_str());
+    
+    // If not found, try to find a window that *contains* the title substring (optional improvement, or just fail)
+    // For now, adhering to strict plan: failing if not found instead of blocking.
+    
     if (root == 0)
     {
-        std::cerr << "Impossible to open '" << title << "' window" << std::endl;
+        std::cerr << "Window '" << title << "' not found." << std::endl;
+        
+        // Optional: List available windows to stderr for debugging purposes, but do NOT block.
         listDisplay(list);
+        std::cerr << "Available windows:" << std::endl;
         int i = 0;
-        for (auto it = list.begin() ; it != list.end() ; it++)
-            cerr << i++ << ") " << it->first << endl;
-        std::cerr << "wich one ? ";
-        int answer = 0;
-        cin >> answer;
-        auto it = list.begin();
-        for (i = 0; i < list.size() ; i++)
-        {
-            if (i == answer)
-            {
-//                root = it->second;
-                title = it->first;
-                configuration["General/title"] = it->first;
-                std::cerr << title << " Selected." << std::endl;
-                saveConfiguration(configuration, filename);
-                break;
-            }
-            it++;
+        for (auto it = list.begin() ; it != list.end() ; it++) {
+             std::cerr << i++ << ") " << it->first << std::endl;
         }
-        root = windowFromNameSearch(display, XDefaultRootWindow(display), title.c_str());
+
+        std::cerr << "Please update config.ini with a valid window title." << std::endl;
+        exit(EXIT_FAILURE); 
     }
-    if (root == 0)
-    {
-        std::cerr << "cannot handle " << title << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    
     //attributes = {0};
     XGetWindowAttributes(display, root, &attributes);
     width = attributes.width;
@@ -527,51 +523,94 @@ XImage *input::getXimg() const
     return ximg;
 }
 
+input::CaptureBuffer input::getCaptureBuffer() const
+{
+#ifdef ENABLE_WAYLAND
+    if (useWayland && waylandCapturer)
+        return { waylandCapturer->getData(), waylandCapturer->getWidth(), waylandCapturer->getHeight() };
+#endif
+    if (ximg)
+        return { reinterpret_cast<const unsigned char*>(ximg->data), width, height };
+    return { nullptr, 0, 0 };
+}
+
 input::input(std::string filename)
     :
     filename(filename)
 {
-    bool res;
-
-    configuration = readConfiguration(filename);
-
-    title = configuration["General/title"];
-    std::string method = configuration["General/method"];
-    full = (title.compare("full") == 0);
-    videoSync = (configuration["General/title"].compare("true") == 0);
+#ifdef __linux__
+    waylandCapturer = nullptr;
+    useWayland = false;
+#endif
 #ifdef WIN32
-    directX = (method.compare("directx") == 0);
-    gdi = (method.compare("gdi") == 0);
+    (void)filename;
+    /* Windows uses the first input::input() constructor above. */
+#else
+    argus::ArgusConfig config;
+    argus::ConfigLoadResult loadResult = argus::loadConfig(filename, config);
+    if (!loadResult.ok) {
+        std::cerr << "Argus config: " << loadResult.error << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    title = config.general.title;
+    full = (title.compare("full") == 0);
+    fps = config.general.fps;
+    delayMs = 1000.0f / fps;
+    videoSync = config.general.videoSync;
+    stats = config.general.stats;
+    cropX = config.cropping.x;
+    cropY = config.cropping.y;
+    cropWidth = config.cropping.width;
+    cropHeight = config.cropping.height;
+
+#ifdef ENABLE_WAYLAND
+    argus::CaptureMethod method = argus::parseCaptureMethod(config.general.captureMethod);
+    if (method == argus::CaptureMethod::Wayland ||
+        (method == argus::CaptureMethod::Auto && getenv("WAYLAND_DISPLAY") != nullptr)) {
+        waylandCapturer = new InputWayland();
+        if (waylandCapturer->initialize()) {
+            useWayland = true;
+            width = waylandCapturer->getWidth();
+            height = waylandCapturer->getHeight();
+        } else {
+            delete waylandCapturer;
+            waylandCapturer = nullptr;
+            if (method == argus::CaptureMethod::Wayland)
+                std::cerr << "Argus: method=wayland but Wayland capture not available; use method=x11 to capture an X11/XWayland window." << std::endl;
+        }
+    }
 #endif
-
-    configure();
-
-#if WIN32
-    std::string out0 = configuration["General/Prefix"] + " Argus SharedMemory";
-
-    const int SHM_SIZE = width*height*4 + sizeof(*header); // Taille de la m�moire partag�e
-
-    region = createSHM(out0.c_str(), SHM_SIZE);
-    header = (t_argusExchange*)region;
-    header->width = width;
-    header->height = height;
-    header->size = SHM_SIZE;
-    header->inWrite = false;
-#elif __linux__
-    initXSHM();
+    if (!useWayland) {
+        configure();
+        initXSHM();
+    }
 #endif
-
 }
 
 input::~input()
 {
-    cleanupXSHM();
+#ifdef ENABLE_WAYLAND
+    if (waylandCapturer) {
+        delete waylandCapturer;
+        waylandCapturer = nullptr;
+    }
+#endif
+#ifdef __linux__
+    if (!useWayland)
+        cleanupXSHM();
+#endif
 }
 
 
 void input::shoot()
 {
     auto begin = std::chrono::high_resolution_clock::now();
+#ifdef ENABLE_WAYLAND
+    if (waylandCapturer) {
+        waylandCapturer->captureCheck();
+        // Copy data to SHM or texture
+    } else 
+#endif
     captureXSHM();
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);

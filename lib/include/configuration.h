@@ -24,3 +24,12 @@ std::map<std::string, std::string> readConfiguration(const std::string& filename
  * @param filename
  */
 void saveConfiguration(const std::map<std::string, std::string>& keyValuePairs, const std::string& filename);
+
+static inline int my_stoi(const std::string& str) {
+    try {
+        return stoi(str);
+    } catch (const std::invalid_argument& e) {
+        std::cerr << "Invalid argument: " << str << std::endl;
+        throw;
+    }
+}

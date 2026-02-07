@@ -16,8 +16,10 @@
 #include <sys/shm.h>
 #include <X11/extensions/Xrandr.h>
 #include <dirent.h>
+#include <cstring>
 
 static bool XShmHaveFail = false;
+static bool XShmBadMatch = false;  /* SHM non supporté (fréquent sous XWayland) */
 
 int handlerXorgException(Display * d, XErrorEvent *e)
 {
@@ -27,6 +29,14 @@ int handlerXorgException(Display * d, XErrorEvent *e)
         )
     {
         XShmHaveFail = true;
+    }
+    else if (e->error_code == 8 && e->request_code == 73)
+    {
+        /* BadMatch sur MIT-SHM (XShmGetImage) : courant sous XWayland */
+        if (!XShmBadMatch) {
+            XShmBadMatch = true;
+            std::cerr << "Argus: X11 SHM capture failed (BadMatch), using XGetImage fallback (e.g. under XWayland)." << std::endl;
+        }
     }
     else if (    e->error_code   == 9
              &&  e->minor_code   == 0
@@ -73,10 +83,20 @@ bool input::initXSHM()
 
 bool input::captureXSHM()
 {
+    if (XShmBadMatch) {
+        /* Fallback sans SHM (XWayland / fenêtre composée) */
+        XImage *tmp = XGetImage(display, root, 0, 0, width, height, AllPlanes, ZPixmap);
+        if (tmp && ximg && tmp->data && ximg->data && tmp->bytes_per_line == ximg->bytes_per_line
+            && tmp->height == ximg->height) {
+            memcpy(ximg->data, tmp->data, (size_t)(ximg->bytes_per_line * ximg->height));
+        }
+        if (tmp)
+            XDestroyImage(tmp);
+        return true;
+    }
     XShmGetImage(display, root, ximg, 0, 0, 0x00ffffff);
     if (XShmHaveFail)
     {
-        //std::cerr << "XSHM failed, fallback method" << std::endl;
         ximg = XGetSubImage(display, root, 0, 0, width, height, AllPlanes, ZPixmap, ximg, 0, 0);
     }
     return true;

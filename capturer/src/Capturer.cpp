@@ -1,21 +1,23 @@
 #include "argus.h"
-#include "configuration.h"
+#include "argusConfig.h"
 #include "input.hpp"
 #include "subprocessrunner.h"
 
 int main(int argc, char *argv[])
 {
     usage(argc, argv);
-    std::map<std::string, std::string> configuration = readConfiguration(argv[1]);
+    argus::ArgusConfig config;
+    if (!argus::loadConfig(argv[1], config).ok)
+        config = argus::ArgusConfig();
 
-    if (configuration.find("General/Child") != configuration.end())
+    if (!config.general.child.empty())
     {
         input * capt = new input(argv[1]);
 
         SubProcessRunner *subProcessRunner;
         std::string desktop = "";
 
-        subProcessRunner = new SubProcessRunner(configuration["General/Child"], desktop, argc, argv);
+        subProcessRunner = new SubProcessRunner(config.general.child, desktop, argc, argv);
         subProcessRunner->runSubProcess();
 
         while (subProcessRunner->active()) {

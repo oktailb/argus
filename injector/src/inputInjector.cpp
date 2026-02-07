@@ -8,7 +8,7 @@
 #include "shm.h"
 #include "types.h"
 #include "argus.h"
-#include "configuration.h"
+#include "argusConfig.h"
 #include "subprocessrunner.h"
 
 #pragma data_seg(".shared")
@@ -47,12 +47,14 @@ int main(int argc, char **argv) {
     const char* dllPath = argv[2];
     const char* targetProcessPath = argv[3];
 
-    std::map<std::string, std::string>                  configuration;
-    configuration = readConfiguration(filename);
-    std::string out0 = configuration["General/Prefix"] + " Argus SharedMemory";
+    argus::ArgusConfig config;
+    if (!argus::loadConfig(filename, config).ok)
+        config = argus::ArgusConfig();
+
+    std::string out0 = config.general.prefix + " Argus SharedMemory";
     HWND												hWnd;
     RECT                                                rect;
-    std::string title = configuration["General/title"];
+    std::string title = config.general.title;
     hWnd = FindWindowA(nullptr, (LPCSTR)title.c_str());
     if (hWnd == nullptr) {
         std::map<std::string, HWND> list;
@@ -70,8 +72,8 @@ int main(int argc, char **argv) {
             {
                 hWnd = it->second;
                 title = it->first;
-                configuration["General/title"] = it->first;
-                saveConfiguration(configuration, filename);
+                config.general.title = title;
+                argus::saveConfig(filename, config);
                 break;
             }
             it++;
@@ -81,7 +83,7 @@ int main(int argc, char **argv) {
     GetClientRect(hWnd, &rect);
     width = rect.right - rect.left;
     height = rect.bottom - rect.top;
-    prefix = configuration["General/Prefix"] + " Argus SharedMemory";
+    prefix = config.general.prefix + " Argus SharedMemory";
 
     std::cerr << "window '" << title << "' grabbed " << width << "x" << height << " for shm prefix " << prefix << std::endl;
 
@@ -175,7 +177,7 @@ int main(int argc, char **argv) {
     SubProcessRunner *subProcessRunner;
     std::string desktop = "";
 
-    subProcessRunner = new SubProcessRunner(configuration["General/Child"], desktop, argc, argv);
+    subProcessRunner = new SubProcessRunner(config.general.child, desktop, argc, argv);
     subProcessRunner->runSubProcess();
 
     while (subProcessRunner->active()) {

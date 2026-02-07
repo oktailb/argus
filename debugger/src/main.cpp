@@ -7,6 +7,7 @@
 #include "desktop.h"
 #include "types.h"
 #include "argus.h"
+#include "argusConfig.h"
 
 #include <iostream>
 #include <string>
@@ -112,7 +113,6 @@ int main(int argc, char **argv) {
 #include <X11/Xos.h>
 #include <sys/shm.h>
 #include "input.hpp"
-#include "configuration.h"
 
 input* capturer;
 
@@ -126,7 +126,8 @@ int main(int argc, char**argv) {
     usage(argc, argv);
     std::string out0 = "prefix Argus SharedMemory";
 
-    std::map<std::string, std::string> configuration = readConfiguration(argv[1]);
+    argus::ArgusConfig config;
+argus::loadConfig(argv[1], config);
 
     Display* display = XOpenDisplay(nullptr);
     if (!display) {
@@ -137,7 +138,7 @@ int main(int argc, char**argv) {
     capturer = new input(argv[1]);
     Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0, capturer->getWidth(), capturer->getHeight(), 0, BlackPixel(display, DefaultScreen(display)), WhitePixel(display, DefaultScreen(display)));
 
-    std::string title = configuration["General/title"] + " copy";
+    std::string title = config.general.title + " copy";
     XStoreName(display, window, title.c_str());
 
     XSelectInput(display, window, ExposureMask);

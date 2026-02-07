@@ -56,12 +56,12 @@ void SubProcessRunner::runSubProcess()
 
     if (childPid == 0) {
         // Child process
-        char** newArgv = new char*[argc + 2];
+        char** newArgv = new char*[argc + 1];
         newArgv[0] = strdup(program.c_str());
-        for (int i = 1; i <= argc; ++i) {
-            newArgv[i] = strdup(argv[i - 1]);
+        for (int i = 1; i < argc; ++i) {
+            newArgv[i] = strdup(argv[i]);
         }
-        newArgv[argc + 1] = nullptr;
+        newArgv[argc] = nullptr;
 
         execvp(program.c_str(), newArgv);
         std::cerr << "Error running " << program << std::endl;
