@@ -8,7 +8,14 @@
 #include <string>
 
 #include "argus.h"
+#include "argus.h"
 #include "types.h"
+
+#ifdef __linux__
+// #define EGL_EGLEXT_PROTOTYPES // Removed to force manual loading
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#endif
 
 t_Point	calc_linear(t_Point P1, t_Point P2, t_Point P3);
 float	calc_Alinear(float A, float B, float C);
@@ -101,6 +108,8 @@ public:
     void resizeGL(int width, int height);
 #ifdef __linux__
     input *getCapturer() const;
+    void setDisplay(Display *disp);
+    void setEGLDisplay(EGLDisplay disp);
 #endif
 
 private:
@@ -121,6 +130,13 @@ private:
 #elif __linux__
     void * shm;
     input * capturer;
+    EGLImageKHR current_egl_image = EGL_NO_IMAGE_KHR;
+    int current_dmabuf_fd = -1;
+    EGLDisplay egl_display = EGL_NO_DISPLAY;
+
+    PFNEGLCREATEIMAGEKHRPROC p_eglCreateImageKHR = nullptr;
+    PFNEGLDESTROYIMAGEKHRPROC p_eglDestroyImageKHR = nullptr;
+    PFNGLEGLIMAGETARGETTEXTURE2DOESPROC p_glEGLImageTargetTexture2DOES = nullptr;
 #endif
     GLdouble width;
     GLdouble height;

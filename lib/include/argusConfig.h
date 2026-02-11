@@ -67,6 +67,12 @@ struct CroppingConfig {
     int x{0}, y{0}, width{0}, height{0};
 };
 
+// --- Wayland ---
+struct WaylandConfig {
+    std::string useDMABuf{"auto"}; // "auto", "true" (force), "false" (disable)
+    std::string pipewireNode;
+};
+
 /** Configuration complète Argus. */
 struct ArgusConfig {
     GeneralConfig general;
@@ -74,6 +80,7 @@ struct ArgusConfig {
     BlendingConfig blending;
     ColorConfig color;
     CroppingConfig cropping;
+    WaylandConfig wayland;
 };
 
 /**

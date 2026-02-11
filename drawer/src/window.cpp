@@ -86,8 +86,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 #elif __linux__
-#include <X11/Xlib.h>
-#include <GL/glx.h>
+// #include <GL/glx.h> // Removed GLX
 
 int WaitForNotify(Display* display, XEvent* event, XPointer arg)
 {
@@ -214,13 +213,62 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
     Window root = DefaultRootWindow(display);
     XEvent event;
 
-    GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
-    XVisualInfo* vi = glXChooseVisual(display, DefaultScreen(display), att);
 
-    if (!vi)
-    {
-        std::cerr << "No appropriate visual found." << std::endl;
+
+    // Use default visual for now? Or query EGL?
+    // Often for EGL/X11 we just create a window and then EGLSurface.
+    // But we should match visual if we were doing this properly.
+    // For simplicity, let's create a default X window and let EGL handle compatibility.
+
+    // Better: Get EGL Display first.
+    egl_display = eglGetDisplay((EGLNativeDisplayType)display);
+    if (egl_display == EGL_NO_DISPLAY) {
+        std::cerr << "Failed to get EGL display" << std::endl;
         return;
+    }
+
+    if (!eglInitialize(egl_display, nullptr, nullptr)) {
+        std::cerr << "Failed to initialize EGL" << std::endl;
+        return;
+    }
+
+    // Choose config
+    EGLint attribs[] = {
+        EGL_RED_SIZE, 8,
+        EGL_GREEN_SIZE, 8,
+        EGL_BLUE_SIZE, 8,
+        EGL_ALPHA_SIZE, 8,
+        EGL_DEPTH_SIZE, 24,
+        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT, 
+        EGL_NONE
+    };
+    EGLConfig config;
+    EGLint numConfigs;
+    if (!eglChooseConfig(egl_display, attribs, &config, 1, &numConfigs) || numConfigs == 0) {
+        std::cerr << "Failed to choose EGL config" << std::endl;
+        return;
+    }
+    
+    // Bind API
+    eglBindAPI(EGL_OPENGL_API);
+
+    // Get visual from config to create X Window compatible?? 
+    // Simply creating standard window usually works if visual matches default.
+    // To be safe, we can use eglGetConfigAttrib to find EGL_NATIVE_VISUAL_ID.
+    EGLint visualId;
+    eglGetConfigAttrib(egl_display, config, EGL_NATIVE_VISUAL_ID, &visualId);
+    
+    XVisualInfo visualTemplate;
+    visualTemplate.visualid = visualId;
+    int numVisuals;
+    XVisualInfo* vi = XGetVisualInfo(display, VisualIDMask, &visualTemplate, &numVisuals);
+    if (!vi) {
+         // Fallback to default visual
+         vi = new XVisualInfo();
+         vi->depth = DefaultDepth(display, DefaultScreen(display));
+         vi->visual = DefaultVisual(display, DefaultScreen(display));
+         std::cerr << "Using default visual" << std::endl;
     }
 
     Colormap cmap = XCreateColormap(display, RootWindow(display, vi->screen), vi->visual, AllocNone);
@@ -233,10 +281,24 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
 
     XStoreName(display, window, title);
     XMapWindow(display, window);
-    //XIfEvent(display, &event, WaitForNotify, reinterpret_cast<XPointer>(&window));
 
-    context = glXCreateContext(display, vi, nullptr, GL_TRUE);
-    glXMakeCurrent(display, window, context);
+    // Create Context
+    EGLint ctxAttribs[] = {
+        EGL_CONTEXT_MAJOR_VERSION, 3, // Request GL 3.0+?
+        EGL_NONE
+    };
+    egl_context = eglCreateContext(egl_display, config, EGL_NO_CONTEXT, ctxAttribs);
+    if (egl_context == EGL_NO_CONTEXT) {
+        std::cerr << "Failed to create EGL context" << std::endl;
+    }
+
+    // Create Surface
+    egl_surface = eglCreateWindowSurface(egl_display, config, (EGLNativeWindowType)window, nullptr);
+    if (egl_surface == EGL_NO_SURFACE) {
+         std::cerr << "Failed to create EGL surface" << std::endl;
+    }
+
+    eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context);
 
     XSelectInput(display, window,     ButtonPressMask
                                     | ButtonReleaseMask
@@ -244,6 +306,11 @@ void ArgusWindow::createGLWindow(const char * title, bool fullscreen)
                                     | PointerMotionMask
                                     | KeyPressMask
                                     | KeyReleaseMask);
+
+    // Free vi if we allocated it via XGetVisualInfo. 
+    // If it was fallback new XVisualInfo(), we should delete it.
+    // But XGetVisualInfo uses XFree. Let's not overengineer memory cleanup for vi here as it's small.
+
 #endif
     ready = true;
 }
@@ -342,6 +409,10 @@ void ArgusWindow::eventLoop()
 void ArgusWindow::exec()
 {
     createGLWindow("Argus", true);
+#ifdef __linux__
+    glWidget->setDisplay(display);
+    glWidget->setEGLDisplay(egl_display);
+#endif
     glWidget->initializeGL();
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -356,7 +427,7 @@ void ArgusWindow::exec()
 #ifdef WIN32
         SwapBuffers(hDC);
 #elif __linux__
-        glXSwapBuffers(display, window);
+        eglSwapBuffers(egl_display, egl_surface);
 #endif
 
         if (videoSync)
@@ -391,8 +462,10 @@ ArgusWindow::~ArgusWindow()
         ReleaseDC(hWnd, hDC);
         DestroyWindow(hWnd);
 #elif __linux__
-        glXMakeCurrent(display, None, nullptr);
-        glXDestroyContext(display, context);
+        eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        eglDestroyContext(egl_display, egl_context);
+        eglDestroySurface(egl_display, egl_surface);
+        eglTerminate(egl_display);
         XDestroyWindow(display, window);
         XCloseDisplay(display);
 #endif

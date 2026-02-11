@@ -132,6 +132,18 @@ GLWidget::~GLWidget()
 #endif
 }
 
+#ifdef __linux__
+void GLWidget::setDisplay(Display *disp)
+{
+    this->display = disp;
+}
+
+void GLWidget::setEGLDisplay(EGLDisplay disp)
+{
+    this->egl_display = disp;
+}
+#endif
+
 void GLWidget::initializeGL()
 {
     glewInit();
@@ -177,6 +189,22 @@ void GLWidget::initializeGL()
     textureCurrent = textureCapture;
     calcPillow(pillowModel, recursionLevel, textureCurrent, Zlevel);
     calcPillowFdf(pillowModel, recursionLevel, 0, Zlevel + 1);
+
+#ifdef __linux__
+    // EGL Display is set via setEGLDisplay by ArgusWindow
+    if (egl_display == EGL_NO_DISPLAY) {
+        std::cerr << "EGL display not set in GLWidget" << std::endl;
+    } else {
+         // Load extensions (still needed here if not loaded globally)
+        p_eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)eglGetProcAddress("eglCreateImageKHR");
+        p_eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)eglGetProcAddress("eglDestroyImageKHR");
+        p_glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC)eglGetProcAddress("glEGLImageTargetTexture2DOES");
+        
+        if (!p_eglCreateImageKHR || !p_eglDestroyImageKHR || !p_glEGLImageTargetTexture2DOES) {
+                std::cerr << "Failed to load EGL/GL extension functions for DMABuf import" << std::endl;
+        }
+    }
+#endif
 }
 
 void GLWidget::updateTextureFromSharedMemory(char *data) {
@@ -187,18 +215,58 @@ void GLWidget::updateTextureFromSharedMemory(char *data) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
 #elif __linux__
     capturer->shoot();
-    input::CaptureBuffer buf = capturer->getCaptureBuffer();
-    bool haveData = false;
-    if (buf.data && buf.width > 0 && buf.height > 0) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buf.width, buf.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, buf.data);
-        haveData = true;
-    } else if (capturer->getXimg() && width > 0 && height > 0) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, capturer->getXimg()->data);
-        haveData = true;
-    }
-    if (!haveData) {
-        glBindTexture(GL_TEXTURE_2D, 0);
-        return;
+    
+    // 1. Try DMABuf path first
+    if (capturer->hasDMABuf()) {
+        const DMABufFrame& dma = capturer->getDMABuf();
+        
+        if (dma.fd != current_dmabuf_fd) {
+            if (current_egl_image != EGL_NO_IMAGE_KHR && p_eglDestroyImageKHR) {
+                p_eglDestroyImageKHR(egl_display, current_egl_image);
+                current_egl_image = EGL_NO_IMAGE_KHR;
+            }
+
+            EGLint attribs[] = {
+                EGL_WIDTH, (EGLint)dma.width,
+                EGL_HEIGHT, (EGLint)dma.height,
+                EGL_LINUX_DRM_FOURCC_EXT, (EGLint)dma.format,
+                EGL_DMA_BUF_PLANE0_FD_EXT, dma.fd,
+                EGL_DMA_BUF_PLANE0_OFFSET_EXT, 0,
+                EGL_DMA_BUF_PLANE0_PITCH_EXT, (EGLint)dma.stride,
+                EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT, (EGLint)(dma.modifier & 0xFFFFFFFF),
+                EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT, (EGLint)(dma.modifier >> 32),
+                EGL_NONE
+            };
+
+            if (p_eglCreateImageKHR) {
+                current_egl_image = p_eglCreateImageKHR(egl_display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)nullptr, attribs);
+                if (current_egl_image == EGL_NO_IMAGE_KHR) {
+                    std::cerr << "Failed to create EGL image from DMABuf. Error: " << eglGetError() << std::endl;
+                } else {
+                    current_dmabuf_fd = dma.fd;
+                }
+            }
+        }
+
+        if (current_egl_image != EGL_NO_IMAGE_KHR && p_glEGLImageTargetTexture2DOES) {
+            p_glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, current_egl_image);
+        }
+        
+    } else {
+        // 2. Fallback to CPU copy
+        input::CaptureBuffer buf = capturer->getCaptureBuffer();
+        bool haveData = false;
+        if (buf.data && buf.width > 0 && buf.height > 0) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buf.width, buf.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, buf.data);
+            haveData = true;
+        } else if (capturer->getXimg() && width > 0 && height > 0) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, capturer->getXimg()->data);
+            haveData = true;
+        }
+        if (!haveData) {
+            glBindTexture(GL_TEXTURE_2D, 0);
+            return;
+        }
     }
 #endif
     GLERR;

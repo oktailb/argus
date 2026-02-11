@@ -152,6 +152,10 @@ ConfigLoadResult loadConfig(const std::string& filename, ArgusConfig& out) {
     if (out.cropping.width < 0) out.cropping.width = 0;
     if (out.cropping.height < 0) out.cropping.height = 0;
 
+    // --- Wayland ---
+    out.wayland.useDMABuf = getOrDefault(m, "Wayland/useDMABuf", out.wayland.useDMABuf);
+    out.wayland.pipewireNode = getOrDefault(m, "Wayland/pipewireNode", out.wayland.pipewireNode);
+
     return result;
 }
 
@@ -209,6 +213,9 @@ bool saveConfig(const std::string& filename, const ArgusConfig& config) {
     m["Cropping/y"] = std::to_string(config.cropping.y);
     m["Cropping/width"] = std::to_string(config.cropping.width);
     m["Cropping/height"] = std::to_string(config.cropping.height);
+
+    m["Wayland/useDMABuf"] = config.wayland.useDMABuf;
+    m["Wayland/pipewireNode"] = config.wayland.pipewireNode;
 
     saveConfiguration(m, filename);
     return true;

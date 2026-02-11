@@ -37,8 +37,8 @@
 #include <X11/extensions/XShm.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include "inputWayland.hpp"
 #endif
+#include "inputWayland.hpp"
 #include <iostream>
 #include <vector>
 #include <map>
@@ -63,6 +63,11 @@ public:
     /** Buffer de capture (X11 ou Wayland). data peut être nullptr si pas encore de frame. */
     struct CaptureBuffer { const unsigned char* data; int width; int height; };
     CaptureBuffer getCaptureBuffer() const;
+    
+#ifdef ENABLE_WAYLAND
+    bool hasDMABuf() const;
+    const DMABufFrame& getDMABuf() const;
+#endif
 #endif
 
 private:

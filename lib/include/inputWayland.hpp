@@ -25,7 +25,7 @@ struct DMABufFrame {
 
 class InputWayland {
 public:
-    InputWayland();
+    InputWayland(bool useDMABuf);
     ~InputWayland();
 
     bool initialize();
@@ -70,5 +70,10 @@ private:
     // DMABuf frame data
     DMABufFrame current_dmabuf;
     bool has_dmabuf;
+    bool use_dmabuf_requested;
+    
+    // Negotiated parameters
+    uint32_t negotiated_format;    // DRM format
+    uint64_t negotiated_modifier;  // DRM modifier
 #endif
 };

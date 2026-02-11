@@ -28,8 +28,9 @@
  * Référence : xdg-desktop-portal-wlr (pipewire_screencast.c)
  */
 
-InputWayland::InputWayland() : width(0), height(0) {
+InputWayland::InputWayland(bool useDMABuf) : width(0), height(0) {
 #ifdef ENABLE_WAYLAND
+    use_dmabuf_requested = useDMABuf;
     loop = nullptr;
     context = nullptr;
     core = nullptr;
@@ -39,6 +40,8 @@ InputWayland::InputWayland() : width(0), height(0) {
     pipewire_node_id = 0;
     pipewire_fd = -1;
     has_dmabuf = false;
+    negotiated_format = 0;
+    negotiated_modifier = 0;
 #endif
 }
 
@@ -478,9 +481,9 @@ void on_process(void *userdata) {
     struct spa_buffer *spa_buf = buf->buffer;
     struct spa_data *d = &spa_buf->datas[0];
     
-    // Debug: log data type every 60 frames
+    // Debug: log data type every 120 frames (~2s at 60fps)
     static int frame_count = 0;
-    bool should_log = (frame_count++ % 60 == 0);
+    bool should_log = (frame_count++ % 120 == 0);
     
     if (should_log) {
         std::cerr << "[Frame " << frame_count << "] Data type: " << d->type 
@@ -528,7 +531,9 @@ void on_process(void *userdata) {
         
     } else if (d->type == SPA_DATA_DmaBuf) {
         // DMABuf path - extract FD and metadata
-        std::cerr << "  -> DMABuf detected! FD=" << d->fd << std::endl;
+        if (should_log) {
+            std::cerr << "  -> DMABuf detected! FD=" << d->fd << std::endl;
+        }
         
         if (d->fd >= 0) {
             // Clean up previous DMABuf if any
@@ -550,16 +555,23 @@ void on_process(void *userdata) {
             }
             
             // Format and modifier extraction
-            self->current_dmabuf.format = 0x34325241; // DRM_FORMAT_ARGB8888
-            self->current_dmabuf.modifier = 0;
+            self->current_dmabuf.format = self->negotiated_format;
+            self->current_dmabuf.modifier = self->negotiated_modifier;
+            
+            // If format was not negotiated (should not happen if on_param_changed called), fallback
+            if (self->current_dmabuf.format == 0) {
+                 self->current_dmabuf.format = 0x34325241; // DRM_FORMAT_ARGB8888
+            }
             
             self->current_dmabuf.valid = true;
             self->has_dmabuf = true;
             
-            std::cerr << "  -> DMABuf configured: FD=" << self->current_dmabuf.fd 
-                      << ", " << self->width << "x" << self->height 
-                      << ", stride=" << self->current_dmabuf.stride 
-                      << ", has_dmabuf=true" << std::endl;
+            if (should_log) {
+                std::cerr << "  -> DMABuf configured: FD=" << self->current_dmabuf.fd 
+                          << ", " << self->width << "x" << self->height 
+                          << ", stride=" << self->current_dmabuf.stride 
+                          << ", has_dmabuf=true" << std::endl;
+            }
         } else {
             std::cerr << "  -> DMABuf has invalid FD!" << std::endl;
             self->has_dmabuf = false;
@@ -589,6 +601,38 @@ void on_param_changed(void *userdata, uint32_t id, const struct spa_pod *param) 
     self->data.resize(stride * info.size.height);
     
     std::cerr << "Stream format: " << info.size.width << "x" << info.size.height << std::endl;
+
+    // Parse modifier and format
+    const struct spa_pod_prop *prop;
+    struct spa_pod *prop_value;
+
+    // Reset default
+    self->negotiated_modifier = 0; // DRM_FORMAT_MOD_LINEAR
+    self->negotiated_format = 0;
+
+    // Find modifier in properties
+    prop = spa_pod_find_prop(param, nullptr, SPA_FORMAT_VIDEO_modifier);
+    if (prop) {
+        if (spa_pod_is_long(&prop->value)) {
+            spa_pod_get_long(&prop->value, (int64_t*)&self->negotiated_modifier);
+            std::cerr << "  -> Negotiated modifier: " << self->negotiated_modifier << std::endl;
+        }
+    }
+
+    // Map SPA format to DRM format
+    // Simple mapping for common formats
+    if (info.format == SPA_VIDEO_FORMAT_BGRA) {
+        self->negotiated_format = 0x34325241; // DRM_FORMAT_ARGB8888 (little endian)
+    } else if (info.format == SPA_VIDEO_FORMAT_RGBA) {
+        self->negotiated_format = 0x34324142; // DRM_FORMAT_ABGR8888 (little endian)
+    } else if (info.format == SPA_VIDEO_FORMAT_RGBx) {
+        self->negotiated_format = 0x34324258; // DRM_FORMAT_XBGR8888
+    } else if (info.format == SPA_VIDEO_FORMAT_BGRx) {
+        self->negotiated_format = 0x34325258; // DRM_FORMAT_XRGB8888
+    } else {
+        std::cerr << "  -> Warning: Unknown SPA format " << info.format << ", defaulting to ARGB8888" << std::endl;
+        self->negotiated_format = 0x34325241; 
+    }
 }
 
 bool InputWayland::createStream() {
@@ -621,24 +665,46 @@ bool InputWayland::createStream() {
     struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
     const struct spa_pod *params[2];  // Format + Buffers
     
-    // Param 0: EnumFormat (video format)
-    params[0] = (const struct spa_pod*)spa_pod_builder_add_object(&b,
-        SPA_TYPE_OBJECT_Format, SPA_PARAM_EnumFormat,
-        SPA_FORMAT_mediaType, SPA_POD_Id(SPA_MEDIA_TYPE_video),
-        SPA_FORMAT_mediaSubtype, SPA_POD_Id(SPA_MEDIA_SUBTYPE_raw),
-        SPA_FORMAT_VIDEO_format, SPA_POD_CHOICE_ENUM_Id(3,
-            SPA_VIDEO_FORMAT_BGRA,
-            SPA_VIDEO_FORMAT_BGRA,
-            SPA_VIDEO_FORMAT_RGB)
-    );
-    
-    // Param 1: Buffers - request DMABuf data type
-    params[1] = (const struct spa_pod*)spa_pod_builder_add_object(&b,
-        SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers,
-        SPA_PARAM_BUFFERS_dataType, SPA_POD_CHOICE_FLAGS_Int((1 << SPA_DATA_DmaBuf) | (1 << SPA_DATA_MemFd))
-    );
-    
     std::cerr << "Requesting DMABuf data type (with MemFd fallback)" << std::endl;
+
+    if (use_dmabuf_requested) {
+         // Param 0: EnumFormat (video format) WITH modifiers
+        params[0] = (const struct spa_pod*)spa_pod_builder_add_object(&b,
+            SPA_TYPE_OBJECT_Format, SPA_PARAM_EnumFormat,
+            SPA_FORMAT_mediaType, SPA_POD_Id(SPA_MEDIA_TYPE_video),
+            SPA_FORMAT_mediaSubtype, SPA_POD_Id(SPA_MEDIA_SUBTYPE_raw),
+            SPA_FORMAT_VIDEO_format, SPA_POD_CHOICE_ENUM_Id(3,
+                SPA_VIDEO_FORMAT_BGRA,
+                SPA_VIDEO_FORMAT_BGRA,
+                SPA_VIDEO_FORMAT_RGB),
+            SPA_FORMAT_VIDEO_modifier, SPA_POD_CHOICE_FLAGS_Long(0)
+        );
+
+        // Param 1: Buffers - request DMABuf data type
+        params[1] = (const struct spa_pod*)spa_pod_builder_add_object(&b,
+            SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers,
+            SPA_PARAM_BUFFERS_dataType, SPA_POD_CHOICE_FLAGS_Int((1 << SPA_DATA_DmaBuf) | (1 << SPA_DATA_MemFd))
+        );
+         std::cerr << "  -> DMABuf enabled in config" << std::endl;
+    } else {
+        // Param 0: EnumFormat (video format) WITHOUT modifiers (implicit modifier: Linear)
+         params[0] = (const struct spa_pod*)spa_pod_builder_add_object(&b,
+            SPA_TYPE_OBJECT_Format, SPA_PARAM_EnumFormat,
+            SPA_FORMAT_mediaType, SPA_POD_Id(SPA_MEDIA_TYPE_video),
+            SPA_FORMAT_mediaSubtype, SPA_POD_Id(SPA_MEDIA_SUBTYPE_raw),
+            SPA_FORMAT_VIDEO_format, SPA_POD_CHOICE_ENUM_Id(3,
+                SPA_VIDEO_FORMAT_BGRA,
+                SPA_VIDEO_FORMAT_BGRA,
+                SPA_VIDEO_FORMAT_RGB)
+        );
+
+        // Param 1: Buffers - request MemFd/MemPtr only
+        params[1] = (const struct spa_pod*)spa_pod_builder_add_object(&b,
+            SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers,
+            SPA_PARAM_BUFFERS_dataType, SPA_POD_CHOICE_FLAGS_Int((1 << SPA_DATA_MemFd) | (1 << SPA_DATA_MemPtr))
+        );
+        std::cerr << "  -> DMABuf DISABLED in config (MemFd/MemPtr only)" << std::endl;
+    }
     
     // Connect to the PipeWire node WITHOUT MAP_BUFFERS flag
     int res = pw_stream_connect(stream,

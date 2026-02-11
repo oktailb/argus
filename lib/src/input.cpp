@@ -567,7 +567,15 @@ input::input(std::string filename)
     argus::CaptureMethod method = argus::parseCaptureMethod(config.general.captureMethod);
     if (method == argus::CaptureMethod::Wayland ||
         (method == argus::CaptureMethod::Auto && getenv("WAYLAND_DISPLAY") != nullptr)) {
-        waylandCapturer = new InputWayland();
+        
+        bool useDMABuf = true;
+        std::string dmaStr = config.wayland.useDMABuf;
+        // Simple check for disable/false/0
+        if (dmaStr == "disable" || dmaStr == "false" || dmaStr == "0") {
+            useDMABuf = false;
+        }
+
+        waylandCapturer = new InputWayland(useDMABuf);
         if (waylandCapturer->initialize()) {
             useWayland = true;
             width = waylandCapturer->getWidth();
@@ -641,3 +649,20 @@ int input::getHeight() const
 {
     return height;
 }
+
+#ifdef ENABLE_WAYLAND
+bool input::hasDMABuf() const {
+    if (useWayland && waylandCapturer) {
+        return waylandCapturer->hasDMABuf();
+    }
+    return false;
+}
+
+const DMABufFrame& input::getDMABuf() const {
+    if (useWayland && waylandCapturer) {
+        return waylandCapturer->getDMABuf();
+    }
+    static DMABufFrame dummy;
+    return dummy;
+}
+#endif

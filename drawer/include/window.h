@@ -55,7 +55,9 @@ private:
     Display* display = nullptr;
     Window window = 0;
     XEvent event = {};
-    GLXContext context = nullptr;
+    EGLDisplay egl_display = EGL_NO_DISPLAY;
+    EGLSurface egl_surface = EGL_NO_SURFACE;
+    EGLContext egl_context = EGL_NO_CONTEXT;
 #endif
     void eventLoop();
     void createGLWindow(const char * title, bool fullscreen);

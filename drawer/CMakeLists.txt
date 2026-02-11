@@ -80,5 +80,9 @@ else()
     set(DRAWER_DEPS GL GLU X11 Xext)
 endif(WIN32)
 
-target_link_libraries(${PROJECT_NAME} ${DRAWER_DEPS} argus GLEW::GLEW microhttpd)
-include_directories(${CMAKE_SOURCE_DIR}/include include ../capturer/include ../lib/include ${GLEW_INCLUDE_DIRS})
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(EGL REQUIRED egl)
+# pkg_check_modules(GLESV2 REQUIRED glesv2) # Depending on if we need GLES symbols or just EGL
+
+target_link_libraries(${PROJECT_NAME} ${DRAWER_DEPS} argus GLEW::GLEW microhttpd ${EGL_LIBRARIES})
+include_directories(${CMAKE_SOURCE_DIR}/include include ../capturer/include ../lib/include ${GLEW_INCLUDE_DIRS} ${EGL_INCLUDE_DIRS})
